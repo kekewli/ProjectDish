@@ -1,0 +1,11 @@
+﻿<Application x:Class="ProjectDish.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ProjectDish"
+             xmlns:cv="clr-namespace:ProjectDish.Core.Converters" 
+             StartupUri="MVVM/Views/LoginView.xaml">
+    <Application.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+        <cv:InverseBooleanConverter x:Key="InverseBoolConverter"/>
+    </Application.Resources>
+</Application>
