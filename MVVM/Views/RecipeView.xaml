@@ -4,131 +4,291 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:ProjectDish.MVVM.ViewModels"
+        xmlns:cv="clr-namespace:ProjectDish.Core.Converters"
         mc:Ignorable="d"
-        Title="{Binding WindowTitle}" Height="519" Width="900"
+        Title="{Binding WindowTitle}" Height="600" Width="950"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        Background="White">
+        WindowStyle="None"
+        Background="Transparent"
+        AllowsTransparency="True">
 
     <Window.Resources>
-        <!-- Стили (можно вынести в App.xaml для переиспользования) -->
+        <!-- КОНВЕРТЕРЫ -->
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+        <cv:InverseBooleanConverter x:Key="InverseBoolConverter"/>
+
+        <!-- СТИЛЬ ДЛЯ ТЕКСТОВЫХ ПОЛЕЙ -->
         <Style TargetType="TextBox">
-            <Setter Property="Padding" Value="5"/>
-            <Setter Property="Margin" Value="0,5,0,15"/>
+            <Setter Property="Padding" Value="0,5"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#FFAAAAAA"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
+                            <ScrollViewer x:Name="PART_ContentHost"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="#FF2E7D32"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
-        <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="Gray"/>
+
+        <!-- ИСПРАВЛЕННЫЙ СТИЛЬ ДЛЯ COMBOBOX -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#DDD"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Border CornerRadius="5" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
+                            <Grid>
+                                <ToggleButton IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                              Focusable="false" ClickMode="Press" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                              Background="Transparent" BorderThickness="0">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate>
+                                            <Border Background="Transparent"/>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
+
+                                <!-- ВОТ ЗДЕСЬ БЫЛА ОШИБКА. Добавлены ContentTemplate и ContentTemplateSelector -->
+                                <ContentPresenter Name="ContentSite" IsHitTestVisible="False" 
+                                                  Content="{TemplateBinding SelectionBoxItem}"
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                                  Margin="10,0,30,0" VerticalAlignment="Center" HorizontalAlignment="Left" />
+
+                                <Path Data="M0,0 L5,5 L10,0" Stroke="Gray" StrokeThickness="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" IsHitTestVisible="False"/>
+                                <Popup Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
+                                    <Grid Name="DropDown" SnapsToDevicePixels="True" MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                        <Border x:Name="DropDownBorder" Background="White" BorderThickness="1" BorderBrush="#DDD" CornerRadius="5"/>
+                                        <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
+                                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Popup>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- СТИЛЬ ОСНОВНОЙ КНОПКИ -->
+        <Style TargetType="Button" x:Key="PrimaryButton">
+            <Setter Property="Background" Value="#FF2E7D32"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" CornerRadius="8" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF388E3C"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#FFBDBDBD"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- СТИЛЬ ВТОРОСТЕПЕННОЙ КНОПКИ -->
+        <Style TargetType="Button" x:Key="SecondaryButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="BorderBrush" Value="#FFAAAAAA"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" CornerRadius="8" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF2E7D32"/>
+                                <Setter Property="Foreground" Value="#FF2E7D32"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="TextBlock" x:Key="LabelText">
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
         </Style>
     </Window.Resources>
 
-    <!-- Передаем окно как параметр в команду Cancel -->
     <Window.InputBindings>
         <KeyBinding Key="Esc" Command="{Binding CancelCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
     </Window.InputBindings>
 
-    <Grid Margin="20">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="300"/>
-            <!-- Картинка -->
-            <ColumnDefinition Width="*"/>
-            <!-- Поля -->
-        </Grid.ColumnDefinitions>
+    <!-- ОСНОВНОЙ КОНТЕЙНЕР -->
+    <Border CornerRadius="20" Background="White" Margin="10">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="20" ShadowDepth="0" Opacity="0.2"/>
+        </Border.Effect>
 
-        <!-- Левая колонка: Картинка -->
-        <StackPanel Grid.Column="0" Margin="0,0,20,0">
-            <TextBlock Text="Изображение" Margin="0,0,0,5"/>
-
-            <Border Height="300" 
-                    BorderBrush="#FF2E7D32" 
-                    BorderThickness="2" 
-                    CornerRadius="10" 
-                    AllowDrop="True"
-                    Drop="Border_Drop"
-                    Background="#FAFAFA"
-                    Cursor="Hand">
-                <Border.InputBindings>
-                    <MouseBinding MouseAction="LeftClick" Command="{Binding UploadImageCommand}"/>
-                </Border.InputBindings>
-
-                <Grid>
-                    <!-- Подсказка -->
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="📷" FontSize="40" HorizontalAlignment="Center" Foreground="#CCC"/>
-                        <TextBlock Text="Нажмите или перетащите" Foreground="#CCC" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-                    </StackPanel>
-
-                    <!-- Сама картинка -->
-                    <Image Source="{Binding ImagePath}" Stretch="UniformToFill">
-                        <Image.Clip>
-                            <RectangleGeometry Rect="0,0,296,296" RadiusX="8" RadiusY="8"/>
-                        </Image.Clip>
-                    </Image>
-                </Grid>
-            </Border>
-
-            <Button Content="Выбрать файл..." Command="{Binding UploadImageCommand}" Margin="0,10,0,0"/>
-        </StackPanel>
-
-        <!-- Правая колонка: Поля ввода -->
-        <Grid Grid.Column="1">
+        <Grid Margin="30">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
+                <!-- Заголовок -->
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
+                <!-- Контент -->
                 <RowDefinition Height="Auto"/>
+                <!-- Кнопки -->
             </Grid.RowDefinitions>
 
-            <!-- Название -->
-            <StackPanel Grid.Row="0">
-                <TextBlock Text="Название рецепта"/>
-                <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" FontSize="16"/>
+            <!-- Заголовок -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                <TextBlock Text="{Binding WindowTitle}" FontSize="24" FontWeight="Bold" Foreground="#FF2E7D32"/>
+                <Separator Background="#EEE" Margin="0,10,0,0"/>
             </StackPanel>
 
-            <!-- Категория -->
-            <StackPanel Grid.Row="1">
-                <TextBlock Text="Категория"/>
-                <ComboBox ItemsSource="{Binding Categories}" 
-                          SelectedItem="{Binding SelectedCategory}"
-                          DisplayMemberPath="Name"
-                          Height="35" Margin="0,5,0,15" Padding="5"/>
-            </StackPanel>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="320"/>
+                    <!-- Картинка -->
+                    <ColumnDefinition Width="*"/>
+                    <!-- Поля -->
+                </Grid.ColumnDefinitions>
 
-            <!-- Описание -->
-            <StackPanel Grid.Row="2">
-                <TextBlock Text="Описание"/>
-                <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
-                         TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
-                         Height="100"/>
-            </StackPanel>
+                <!-- Левая колонка: Картинка -->
+                <StackPanel Grid.Column="0" Margin="0,0,30,0">
+                    <TextBlock Text="Изображение блюда" Style="{StaticResource LabelText}"/>
 
-            <!-- Ингредиенты -->
-            <StackPanel Grid.Row="3">
-                <TextBlock Text="Ингредиенты"/>
-                <TextBox Text="{Binding Ingredients, UpdateSourceTrigger=PropertyChanged}" 
-                         TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
-                         Height="100"/>
-            </StackPanel>
+                    <!-- Область загрузки -->
+                    <Border Height="300" 
+                            BorderBrush="#DDD" 
+                            BorderThickness="2" 
+                            CornerRadius="12" 
+                            AllowDrop="True"
+                            Drop="Border_Drop"
+                            Background="#FAFAFA"
+                            Cursor="Hand">
+                        <Border.InputBindings>
+                            <MouseBinding MouseAction="LeftClick" Command="{Binding UploadImageCommand}"/>
+                        </Border.InputBindings>
 
-            <!-- Кнопки -->
-            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                        <Grid>
+                            <!-- Заглушка / Подсказка -->
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.5">
+                                <TextBlock Text="📷" FontSize="48" HorizontalAlignment="Center" Foreground="#999"/>
+                                <TextBlock Text="Нажмите или перетащите" Foreground="#999" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                            </StackPanel>
+
+                            <!-- Сама картинка -->
+                            <Image Source="{Binding ImagePath, TargetNullValue={x:Null}}" Stretch="UniformToFill">
+                                <Image.Clip>
+                                    <RectangleGeometry Rect="0,0,316,296" RadiusX="10" RadiusY="10"/>
+                                </Image.Clip>
+                            </Image>
+                        </Grid>
+                    </Border>
+
+                    <Button Content="Выбрать файл..." Command="{Binding UploadImageCommand}" 
+                            Style="{StaticResource SecondaryButton}" 
+                            Height="40" Padding="0" Margin="0,15,0,0"/>
+                </StackPanel>
+
+                <!-- Правая колонка: Поля ввода -->
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Название -->
+                    <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                        <TextBlock Text="Название рецепта" Style="{StaticResource LabelText}"/>
+                        <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" FontSize="16" Padding="0,5"/>
+                    </StackPanel>
+
+                    <!-- Категория -->
+                    <StackPanel Grid.Row="1" Margin="0,0,0,20">
+                        <TextBlock Text="Категория" Style="{StaticResource LabelText}"/>
+                        <ComboBox ItemsSource="{Binding Categories}" 
+                                  SelectedItem="{Binding SelectedCategory}"
+                                  DisplayMemberPath="Name"
+                                  Height="40"/>
+                    </StackPanel>
+
+                    <!-- Описание -->
+                    <StackPanel Grid.Row="2" Margin="0,0,0,20">
+                        <TextBlock Text="Описание приготовления" Style="{StaticResource LabelText}"/>
+                        <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
+                                 TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                                 Height="80" VerticalContentAlignment="Top" Padding="5"/>
+                    </StackPanel>
+
+                    <!-- Ингредиенты -->
+                    <StackPanel Grid.Row="3">
+                        <TextBlock Text="Ингредиенты (каждый с новой строки)" Style="{StaticResource LabelText}"/>
+                        <TextBox Text="{Binding Ingredients, UpdateSourceTrigger=PropertyChanged}" 
+                                 TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                                 Height="80" VerticalContentAlignment="Top" Padding="5"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <!-- Кнопки (Подвал) -->
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
                 <Button Content="Отмена" 
                         Command="{Binding CancelCommand}" 
                         CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
-                        Width="100" Height="35" Background="Transparent" BorderBrush="Gray" BorderThickness="1" Margin="0,0,10,0"/>
+                        Style="{StaticResource SecondaryButton}"
+                        Width="120"/>
 
                 <Button Content="Сохранить" 
                         Command="{Binding SaveCommand}"
-                        Width="120" Height="35" Background="#FF2E7D32" Foreground="White" FontWeight="Bold" 
+                        Style="{StaticResource PrimaryButton}"
+                        Width="150" Margin="15,0,0,0"
                         IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"/>
-                <!-- Нужен конвертер или просто триггер -->
             </StackPanel>
-        </Grid>
 
-        <!-- Индикатор загрузки (overlay) -->
-        <Grid Grid.ColumnSpan="2" Background="#80FFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisConverter}}">
-            <TextBlock Text="Сохранение..." HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20" FontWeight="Bold" Foreground="#FF2E7D32"/>
+            <!-- Индикатор загрузки -->
+            <Grid Grid.RowSpan="3" Background="#90FFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisConverter}}">
+                <Border Background="White" CornerRadius="10" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="20" Opacity="0.2"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <TextBlock Text="⏳" FontSize="30" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                        <TextBlock Text="Загрузка..." FontWeight="Bold" Foreground="#FF2E7D32"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Grid>
-    </Grid>
+    </Border>
 </Window>
+

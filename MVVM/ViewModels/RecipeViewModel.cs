@@ -76,7 +76,6 @@ namespace ProjectDish.MVVM.ViewModels
         public RelayCommand UploadImageCommand { get; }
         public RelayCommand CancelCommand { get; }
 
-        // Конструктор
         public RecipeViewModel(int recipeId = -1)
         {
             if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
@@ -110,7 +109,7 @@ namespace ProjectDish.MVVM.ViewModels
                 await LoadRecipeData();
             }
         }
-        // Загрузка категорий
+
         private async Task LoadCategories()
         {
             try
@@ -200,7 +199,7 @@ namespace ProjectDish.MVVM.ViewModels
             _localFilePath = filePath;
             ImagePath = filePath;
         }
-        // Сохранение рецепта
+
         private async Task SaveRecipe()
         {
             if (IsBusy) return;
@@ -223,7 +222,6 @@ namespace ProjectDish.MVVM.ViewModels
                 MessageBox.Show("Выберите категорию."); return;
             }
 
-            // Проверка картинки
             if (string.IsNullOrEmpty(ImagePath) && string.IsNullOrEmpty(_localFilePath))
             {
                 if (MessageBox.Show("Нет изображения. Добавить?", "Внимание", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
@@ -300,7 +298,6 @@ namespace ProjectDish.MVVM.ViewModels
             }
         }
 
-        // Regex валидация
         private bool IsValidText(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return false;
@@ -308,6 +305,7 @@ namespace ProjectDish.MVVM.ViewModels
             var pattern = @"^[\p{L}\p{Nd}\s\.\,\-\–\—\!\?\+\-\*\:\;\(\)\[\]\{\}""'`«»\/\\\+\=\%\&\#]+$";
             return Regex.IsMatch(text, pattern);
         }
+
         private void CloseWindow(Window window) => window?.Close();
     }
 }

@@ -138,6 +138,8 @@ namespace ProjectDish.MVVM.ViewModels
         {
             try
             {
+                int? savedId = SelectedRecipe?.Id;
+
                 DataTable dt;
 
                 if (string.IsNullOrWhiteSpace(SearchText))
@@ -153,32 +155,38 @@ namespace ProjectDish.MVVM.ViewModels
                 var newItems = new System.Collections.Generic.List<RecipeModel>();
                 foreach (DataRow row in dt.Rows)
                 {
+                    string imgUrl = null;
+                    if (row.Table.Columns.Contains("image_url") && row["image_url"] != DBNull.Value)
+                    {
+                        imgUrl = row["image_url"].ToString();
+                        if (string.IsNullOrWhiteSpace(imgUrl)) imgUrl = null;
+                    }
+
                     newItems.Add(new RecipeModel
                     {
                         Id = Convert.ToInt32(row["recipe_id"]),
                         Name = row["recipe_name"].ToString(),
-                        ImageUrl = row.Table.Columns.Contains("image_url") ? row["image_url"].ToString() : null,
+                        ImageUrl = imgUrl,
                         Rating = row.Table.Columns.Contains("average_rating") && row["average_rating"] != DBNull.Value
                                  ? Convert.ToDecimal(row["average_rating"]) : 0
                     });
                 }
 
-                // Применяем сортировку на клиенте
                 switch (SelectedSortIndex)
                 {
                     case 1: newItems = newItems.OrderByDescending(x => x.Rating).ToList(); break;
                     case 2: newItems = newItems.OrderBy(x => x.Rating).ToList(); break;
                     case 3: newItems = newItems.OrderBy(x => x.Name).ToList(); break;
                 }
-
-                if (Recipes.Count == 0)
+                Recipes.Clear();
+                foreach (var item in newItems) Recipes.Add(item);
+                if (savedId.HasValue)
                 {
-                    foreach (var item in newItems) Recipes.Add(item);
-                }
-                else
-                {
-                    Recipes.Clear();
-                    foreach (var item in newItems) Recipes.Add(item);
+                    var restoredRecipe = Recipes.FirstOrDefault(r => r.Id == savedId.Value);
+                    if (restoredRecipe != null)
+                    {
+                        SelectedRecipe = restoredRecipe;
+                    }
                 }
             }
             catch (Exception ex)
@@ -190,34 +198,39 @@ namespace ProjectDish.MVVM.ViewModels
 
         private async Task DeleteRecipe()
         {
-            if (SelectedRecipe == null) return;
+            var recipeToDelete = SelectedRecipe;
 
-            Logger.Info("Delete recipe requested", new { recipe_id = SelectedRecipe.Id, recipe_name = SelectedRecipe.Name });
+            if (recipeToDelete == null) return;
 
-            var result = MessageBox.Show($"Вы уверены, что хотите удалить {SelectedRecipe.Name}?",
+            _timer.Stop();
+
+            Logger.Info("Delete recipe requested", new { recipe_id = recipeToDelete.Id });
+
+            var result = MessageBox.Show($"Вы уверены, что хотите удалить {recipeToDelete.Name}?",
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
             {
-                var rpcParams = new { p_recipe = SelectedRecipe.Id };
+                var rpcParams = new { p_recipe = recipeToDelete.Id };
                 bool ok = await DatabaseHelper.ExecuteNonQuery("delete_recipe", rpcParams);
 
                 if (ok)
                 {
-                    Logger.Info("Recipe deleted successfully", new { recipe_id = SelectedRecipe.Id });
+                    Logger.Info("Recipe deleted successfully", new { recipe_id = recipeToDelete.Id });
                     MessageBox.Show("Рецепт удален.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    SelectedRecipe = null;
+
                     await LoadData();
                 }
                 else
                 {
-                    Logger.Error("Failed to delete recipe", null, new { recipe_id = SelectedRecipe.Id });
+                    Logger.Error("Failed to delete recipe", null, new { recipe_id = recipeToDelete.Id });
                     MessageBox.Show("Ошибка удаления.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
-            else
-            {
-                Logger.Info("Delete recipe cancelled by user");
-            }
+
+            _timer.Start();
         }
 
         private void CloseCurrentWindow()
@@ -227,6 +240,7 @@ namespace ProjectDish.MVVM.ViewModels
                 if (window.DataContext == this)
                 {
                     window.Close();
+
                     break;
                 }
             }
