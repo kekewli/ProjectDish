@@ -103,20 +103,26 @@ namespace ProjectDish.MVVM.ViewModels
                 if (o is int id)
                 {
                     Logger.Info("Opening recipe details", new { recipe_id = id });
-                    MessageBox.Show($"Детали рецепта ID: {id}");
+
+                    int currentUserId = App.CurrentUser != null ? App.CurrentUser.Id : -1;
+
+                    var form = new RecipeDetailsView(id, currentUserId, true);
+                    form.ShowDialog();
                 }
             });
 
             OpenRequestsCommand = new RelayCommand(o =>
             {
                 Logger.Info("Opening User Requests form");
-                MessageBox.Show("Открытие заявок (UserRequestsForm)");
+                var requestsForm = new UserRequestsView();
+                requestsForm.ShowDialog();
             });
 
             OpenUsersCommand = new RelayCommand(o =>
             {
                 Logger.Info("Opening Users List form");
-                MessageBox.Show("Открытие списка пользователей (UsersForm)");
+                var usersForm = new UsersView();
+                usersForm.ShowDialog();
             });
 
             LogoutCommand = new RelayCommand(o =>

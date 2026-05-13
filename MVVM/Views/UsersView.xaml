@@ -8,10 +8,6 @@
         WindowStartupLocation="CenterScreen"
         WindowStyle="None" Background="Transparent" AllowsTransparency="True">
 
-    <Window.DataContext>
-        <vm:UsersViewModel xmlns:vm="clr-namespace:ProjectDish.MVVM.ViewModels"/>
-    </Window.DataContext>
-
     <Window.Resources>
         <!-- Стили кнопок-->
         <Style TargetType="Button" x:Key="ActionButton">
@@ -134,11 +130,10 @@
                         </TextBox.Style>
                     </TextBox>
 
-                    <!-- КНОПКА ЗАКРЫТЬ ОКНО (КАК В ADMINVIEW) -->
                     <Button Grid.Column="2" Content="Закрыть" 
-                            Command="{Binding CloseCommand}"
-                            CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
-                            Background="Transparent" BorderThickness="0" Foreground="Gray" Cursor="Hand" FontWeight="SemiBold">
+                    Command="{Binding CloseCommand}"
+                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                    Background="Transparent" BorderThickness="0" Foreground="Gray" Cursor="Hand" FontWeight="SemiBold">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="Transparent">

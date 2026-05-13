@@ -66,38 +66,26 @@ namespace ProjectDish.MVVM.ViewModels
 
         private async Task LoadData(bool forceRefresh = false)
         {
-            Logger.Info("LoadData started", new { forceRefresh, searchText = SearchText });
             IsBusy = true;
-
             try
             {
-                Logger.Info("Fetching users from repository...");
                 var allUsers = await _userRepository.GetUsersAsync(forceRefresh);
-
                 if (allUsers == null)
                 {
                     Logger.Warn("LoadData failed to get users list, UI was not updated.");
-                    MessageBox.Show("Не удалось загрузить список пользователей.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
-                Logger.Info($"Repository returned {allUsers.Count} users");
-
                 var filteredUsers = ApplySearch(allUsers);
-                Logger.Info($"After search filter: {filteredUsers.Count} users");
-
                 UpdateUsersCollection(filteredUsers);
-                Logger.Info($"UI updated with {Users.Count} users");
             }
             catch (Exception ex)
             {
-                Logger.Error("Unhandled exception in LoadData", ex, new { });
-                MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                Logger.Error("Unhandled exception in LoadData", ex);
             }
             finally
             {
                 IsBusy = false;
-                Logger.Info("LoadData completed");
             }
         }
 
@@ -105,8 +93,6 @@ namespace ProjectDish.MVVM.ViewModels
         {
             if (string.IsNullOrWhiteSpace(SearchText))
                 return users;
-
-            Logger.Info("Applying search filter", new { query = SearchText });
 
             return users.Where(u =>
                 u.Username.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -116,47 +102,33 @@ namespace ProjectDish.MVVM.ViewModels
 
         private void UpdateUsersCollection(List<UserModel> source)
         {
-            Logger.Info("UpdateUsersCollection started", new { sourceCount = source.Count, currentCount = Users.Count });
-
             var sourceDict = source.ToDictionary(s => s.Id);
             var targetIds = Users.Select(t => t.Id).ToList();
-
-            // Удаляем отсутствующих
             foreach (var id in targetIds)
             {
                 if (!sourceDict.ContainsKey(id))
                 {
-                    var itemToRemove = Users.First(u => u.Id == id);
-                    Application.Current.Dispatcher.Invoke(() => Users.Remove(itemToRemove));
-                    Logger.Info($"Removed user from UI", new { user_id = id });
+                    Application.Current.Dispatcher.Invoke(() => Users.Remove(Users.First(u => u.Id == id)));
                 }
             }
-
-            // Добавляем новых или обновляем существующих
             foreach (var sourceItem in source)
             {
                 var targetItem = Users.FirstOrDefault(t => t.Id == sourceItem.Id);
                 if (targetItem == null)
                 {
                     Application.Current.Dispatcher.Invoke(() => Users.Add(sourceItem));
-                    Logger.Info($"Added new user to UI", new { user_id = sourceItem.Id });
                 }
                 else
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        targetItem.Username = sourceItem.Username;
-                        targetItem.Email = sourceItem.Email;
-                        targetItem.RoleId = sourceItem.RoleId;
-                        targetItem.RoleName = sourceItem.RoleName;
-                    });
-                    Logger.Info($"Updated existing user in UI", new { user_id = sourceItem.Id });
+                    targetItem.Username = sourceItem.Username;
+                    targetItem.Email = sourceItem.Email;
+                    targetItem.RoleId = sourceItem.RoleId;
+                    targetItem.RoleName = sourceItem.RoleName;
                 }
             }
-
-            Logger.Info("UpdateUsersCollection completed", new { finalCount = Users.Count });
         }
 
+        // Метод для обновления пользователя
         private async Task UpdateUser()
         {
             var userToUpdate = SelectedUser;
@@ -167,13 +139,8 @@ namespace ProjectDish.MVVM.ViewModels
             var editForm = new UpdateUserView(userToUpdate.Id);
             editForm.ShowDialog();
 
-            Logger.Info("Edit form closed");
-
             _userRepository.InvalidateCache();
-
             await LoadData(true);
-
-            Logger.Info("User list refreshed after edit");
         }
 
         private async Task DeleteUser()
@@ -181,7 +148,7 @@ namespace ProjectDish.MVVM.ViewModels
             var userToDelete = SelectedUser;
             if (userToDelete == null) return;
 
-            if (userToDelete.Id == App.CurrentUser.Id)
+            if (App.CurrentUser != null && userToDelete.Id == App.CurrentUser.Id)
             {
                 MessageBox.Show("Вы не можете удалить свой собственный аккаунт из этой панели.", "Действие запрещено", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -196,14 +163,12 @@ namespace ProjectDish.MVVM.ViewModels
 
             if (ok)
             {
-                Logger.Info("User deleted successfully", new { user_id = userToDelete.Id });
                 MessageBox.Show("Пользователь удален.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                 _userRepository.InvalidateCache();
                 await LoadData(true);
             }
             else
             {
-                Logger.Warn("Delete user RPC returned false", new { user_id = userToDelete.Id });
                 MessageBox.Show("Ошибка удаления.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -213,34 +178,25 @@ namespace ProjectDish.MVVM.ViewModels
             var userToToggle = SelectedUser;
             if (userToToggle == null) return;
 
-            if (userToToggle.Id == App.CurrentUser.Id && userToToggle.RoleId == 1)
+            if (App.CurrentUser != null && userToToggle.Id == App.CurrentUser.Id && userToToggle.RoleId == 1)
             {
                 MessageBox.Show("Вы не можете снять с себя права администратора.", "Действие запрещено", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             int newRole = (userToToggle.RoleId == 1) ? 2 : 1;
-            string newRoleName = newRole == 1 ? "Administrator" : "User";
-
             var rpcParams = new { p_user_id = userToToggle.Id, p_new_role_id = newRole };
             Logger.Info("Toggling admin rights", new { user_id = userToToggle.Id, new_role = newRole });
 
             bool ok = await DatabaseHelper.ExecuteNonQuery("set_admin_rights", rpcParams);
-
             if (ok)
             {
-                Logger.Info("Admin rights toggled successfully", new { user_id = userToToggle.Id, new_role = newRole });
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    userToToggle.RoleId = newRole;
-                    userToToggle.RoleName = newRoleName;
-                });
+                MessageBox.Show("Права обновлены.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                 _userRepository.InvalidateCache();
+                await LoadData(true);
             }
             else
             {
-                Logger.Warn("Toggle admin rights RPC returned false", new { user_id = userToToggle.Id });
                 MessageBox.Show("Ошибка обновления прав.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

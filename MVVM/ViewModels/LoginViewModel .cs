@@ -41,7 +41,7 @@ namespace ProjectDish.MVVM.ViewModels
             NavigateToRegisterCommand = new RelayCommand(o => OpenWindowAndCloseCurrent(new RegisterView()));
 
             // Восстановления пароля
-            ForgotPasswordCommand = new RelayCommand(o => MessageBox.Show("Функция восстановления пароля в разработке."));
+            ForgotPasswordCommand = new RelayCommand(o => new PasswordResetView().ShowDialog());
 
             // Выход
             ExitCommand = new RelayCommand(o => Application.Current.Shutdown());
@@ -84,10 +84,8 @@ namespace ProjectDish.MVVM.ViewModels
                     }
                     else
                     {
-                        // TODO: UserView
-
-                        Logger.Warn("Navigation failed: View not implemented", new { target = "UserView", username = UserName });
-                        MessageBox.Show("Интерфейс пользователя находится в разработке.", "Инфо", MessageBoxButton.OK, MessageBoxImage.Information);
+                        // Панель пользователя
+                        OpenWindowAndCloseCurrent(new UserView(userId));
                     }
                 }
                 else
@@ -99,7 +97,6 @@ namespace ProjectDish.MVVM.ViewModels
             catch (Exception ex)
             {
                 Logger.Error("System error during login process", ex, new { username = UserName });
-                MessageBox.Show("Произошла ошибка системы. Подробности в лог-файле.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {

@@ -20,16 +20,14 @@ namespace ProjectDish.MVVM.Views
     /// </summary>
     public partial class RecipeView : Window
     {
-        public RecipeView()
+        private readonly RecipeViewModel _viewModel;
+
+        // Конструктор, который принимает все нужные параметры
+        public RecipeView(int recipeId = -1, int userId = -1, bool isRequest = false)
         {
             InitializeComponent();
-            DataContext = new RecipeViewModel();
-        }
-        // Конструктор для редактирования
-        public RecipeView(int recipeId)
-        {
-            InitializeComponent();
-            DataContext = new RecipeViewModel(recipeId);
+            _viewModel = new RecipeViewModel(recipeId, userId, isRequest);
+            DataContext = _viewModel;
         }
 
         private void Border_Drop(object sender, DragEventArgs e)

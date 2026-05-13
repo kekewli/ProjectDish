@@ -1,16 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
+using ProjectDish.MVVM.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using ProjectDish.MVVM.ViewModels;
 
 namespace ProjectDish.MVVM.Views
 {
@@ -22,6 +14,7 @@ namespace ProjectDish.MVVM.Views
         public AdminView()
         {
             InitializeComponent();
+            DataContext = new AdminViewModel();
         }
 
         private void ListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

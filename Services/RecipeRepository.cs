@@ -15,7 +15,7 @@ namespace ProjectDish.Services
 
         private RecipeRepository() { }
 
-        // Основной метод для получения рецептов
+        // Получение всех рецептов (из кэша или БД)
         public async Task<List<RecipeModel>> GetRecipesAsync(bool forceRefresh = false)
         {
             if (!forceRefresh)
@@ -32,19 +32,50 @@ namespace ProjectDish.Services
 
             if (recipesFromDb != null)
             {
-                CacheService.Instance.Set(RecipesCacheKey, recipesFromDb);
+                CacheService.Instance.Set(RecipesCacheKey, recipesFromDb, 5); // Кэшируем на 5 минут
             }
 
             return recipesFromDb;
         }
 
-        // Метод для принудительной очистки кэша 
+        // Поиск рецептов (не кэшируем, так как запросы разные)
+        public async Task<List<RecipeModel>> SearchRecipesAsync(string searchText)
+        {
+            try
+            {
+                Logger.Info("Searching recipes...", new { query = searchText });
+                var rpcParams = new { p_key = searchText };
+                DataTable dt = await DatabaseHelper.ExecuteQuery("search_recipes", rpcParams);
+
+                var items = new List<RecipeModel>();
+                foreach (DataRow row in dt.Rows)
+                {
+                    items.Add(new RecipeModel
+                    {
+                        Id = Convert.ToInt32(row["recipe_id"]),
+                        Name = row["recipe_name"].ToString(),
+                        ImageUrl = row.Table.Columns.Contains("image_url") && row["image_url"] != DBNull.Value ? row["image_url"].ToString() : null,
+                        Rating = row.Table.Columns.Contains("average_rating") && row["average_rating"] != DBNull.Value ? Convert.ToDecimal(row["average_rating"]) : 0
+                    });
+                }
+                Logger.Info($"Successfully found {items.Count} recipes.");
+                return items;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to search recipes", ex);
+                return null;
+            }
+        }
+
+        // Очистка кэша
         public void InvalidateCache()
         {
             CacheService.Instance.Remove(RecipesCacheKey);
+            Logger.Info("Recipes cache invalidated.");
         }
 
-        // Внутренний метод для загрузки из БД 
+        // Загрузка данных из БД
         private async Task<List<RecipeModel>> FetchFromDatabaseAsync()
         {
             try

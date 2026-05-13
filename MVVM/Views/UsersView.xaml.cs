@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ProjectDish.MVVM.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,14 @@ namespace ProjectDish.MVVM.Views
         public UsersView()
         {
             InitializeComponent();
+            DataContext = new UsersViewModel();
+        }
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (DataContext is UsersViewModel vm)
+            {
+            }
         }
     }
+
 }

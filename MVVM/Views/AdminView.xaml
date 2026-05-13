@@ -12,10 +12,6 @@
         Background="Transparent"
         AllowsTransparency="True">
 
-    <Window.DataContext>
-        <vm:AdminViewModel/>
-    </Window.DataContext>
-
     <Window.Resources>
         <!-- СТИЛЬ ДЛЯ КНОПОК ДЕЙСТВИЙ -->
         <Style TargetType="Button" x:Key="ActionButton">
