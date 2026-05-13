@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /App.config
 /App.xaml.cs
+/update.xml
