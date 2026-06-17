@@ -105,6 +105,11 @@
             <!-- Верхняя панель -->
             <Border Grid.Row="0" Background="White" Padding="20" CornerRadius="20,20,0,0" BorderBrush="#EEE" BorderThickness="0,0,0,1">
                 <Grid>
+                    <!-- ПРАВИЛЬНАЯ РАЗБИВКА НА КОЛОНКИ: 
+                         0: Заголовок + Логин (Авто)
+                         1: Поиск (Занимает все свободное место '*')
+                         2: Сортировка (Авто)
+                         3: Кнопка "Выйти" (Авто) -->
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -112,13 +117,27 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="Project Dishes" FontWeight="Bold" FontSize="18" Foreground="#FF2E7D32"/>
-                        <TextBlock Text="{Binding UserName, StringFormat=' | {0}'}" FontSize="18" Foreground="Gray"/>
+
+                        <!-- Кнопка с логином -->
+                        <Button Command="{Binding OpenUpdateUserCommand}" Background="Transparent" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center" Margin="5,0,0,0">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <TextBlock x:Name="UserText" Text="{Binding UserName, StringFormat='| {0}'}" FontSize="18" Foreground="Gray"/>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="UserText" Property="Foreground" Value="#FF2E7D32"/>
+                                            <!-- Убрана строчка TextDecorations="Underline" -->
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
                     </StackPanel>
 
-                    <!-- Поиск -->
-                    <TextBox Grid.Column="1" Margin="30,0" Padding="10,8" FontSize="14" VerticalAlignment="Center"
+                    <!-- Поиск  -->
+                    <TextBox Grid.Column="1" Margin="30,0,30,0" Padding="10,8" FontSize="14" VerticalAlignment="Center"
                              Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}">
                         <TextBox.Style>
                             <Style TargetType="TextBox">
@@ -159,9 +178,9 @@
                         </TextBox.Style>
                     </TextBox>
 
-                    <!-- Сортировка -->
-                    <ComboBox Grid.Column="2" Width="200" VerticalAlignment="Center" Margin="0,0,20,0"
-                              SelectedIndex="{Binding SelectedSortIndex}">
+                    <!-- Сортировка  -->
+                    <ComboBox Grid.Column="2" VerticalAlignment="Center" Margin="0,0,20,0" Width="230"
+                              SelectedIndex="{Binding SelectedSortIndex}" SelectionChanged="ComboBox_SelectionChanged">
                         <ComboBoxItem Content="Сортировка: По умолчанию"/>
                         <ComboBoxItem Content="Сортировка: Рейтинг (Высокий)"/>
                         <ComboBoxItem Content="Сортировка: Рейтинг (Низкий)"/>

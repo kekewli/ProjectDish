@@ -1,0 +1,140 @@
+﻿<Window x:Class="ProjectDish.MVVM.Views.Common.AppDialogWindow"
+          xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        SizeToContent="Height"
+        MinWidth="420"
+        Width="420"
+        PreviewKeyDown="Window_PreviewKeyDown">
+    <Window.Resources>
+        <Style x:Key="DialogGreenButton" TargetType="Button">
+            <Setter Property="Background" Value="#FF2E7D32"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FF2E7D32"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="16,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                        CornerRadius="8"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF388E3C"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF1B5E20"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    
+    <Border CornerRadius="18" Background="White" Margin="10">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.25"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="52"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Верхняя плашка -->
+            <Border Grid.Row="0" Background="#FF2E7D32" CornerRadius="18,18,0,0" Padding="16,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="{Binding HeaderIcon}"
+                               FontSize="20"
+                               VerticalAlignment="Center"
+                               Foreground="White"
+                               Margin="0,0,10,0"/>
+
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding HeaderTitle}"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Foreground="White"
+                               TextWrapping="Wrap"/>
+                </Grid>
+            </Border>
+
+            <!-- Текст -->
+            <Border Grid.Row="1" Background="White" Padding="22,18">
+                <TextBlock Text="{Binding MessageText}"
+               FontSize="14"
+               Foreground="#333"
+               TextWrapping="Wrap"
+               LineHeight="22"/>
+            </Border>
+
+            <!-- Кнопки -->
+            <Border Grid.Row="2" Background="White" Padding="20,0,20,20">
+                <Grid>
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Visibility="{Binding SingleButtonVisibility}">
+                        <Button Content="{Binding PrimaryButtonText}"
+                                Width="110"
+                                Height="34"
+                                Margin="6,0"
+                                IsDefault="True"
+                                Click="PrimaryButton_Click"
+                                Style="{StaticResource DialogGreenButton}"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Visibility="{Binding MultiButtonVisibility}">
+                        <Button Content="{Binding PrimaryButtonText}"
+                                Width="110"
+                                Height="34"
+                                Margin="6,0"
+                                IsDefault="True"
+                                Click="PrimaryButton_Click"
+                                Style="{StaticResource DialogGreenButton}"/>
+
+                        <Button Content="{Binding SecondaryButtonText}"
+                                Width="110"
+                                Height="34"
+                                Margin="6,0"
+                                Click="SecondaryButton_Click"
+                                Style="{StaticResource DialogGreenButton}"/>
+
+                        <Button Content="{Binding CancelButtonText}"
+                                Width="110"
+                                Height="34"
+                                Margin="6,0"
+                                Visibility="{Binding CancelButtonVisibility}"
+                                Click="CancelButton_Click"
+                                Style="{StaticResource DialogGreenButton}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

@@ -17,7 +17,6 @@
     </Window.DataContext>
 
     <Window.Resources>
-        <!-- Стили остаются те же, что я присылал выше -->
         <Style TargetType="TextBox">
             <Setter Property="Padding" Value="0,5"/>
             <Setter Property="FontSize" Value="14"/>
@@ -91,6 +90,35 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="EyeToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#FF2E7D32"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Foreground" Value="#FF2E7D32"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Foreground" Value="#FF1B5E20"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Border CornerRadius="20" Background="White" Margin="10">
@@ -142,14 +170,20 @@
                              Visibility="Collapsed"
                              TextChanged="VisiblePasswordBox_TextChanged"/>
 
-                    <!-- Кнопка переключения -->
-                    <ToggleButton x:Name="TogglePassBtn" 
-                                  Content="👁" 
-                                  HorizontalAlignment="Right" VerticalAlignment="Center"
-                                  Width="30" Height="30"
-                                  Background="Transparent" BorderThickness="0"
-                                  Click="TogglePassBtn_Click" Cursor="Hand"/>
-                </Grid>
+                    <!-- Кнопка переключения видимости пароля -->
+                    <ToggleButton x:Name="TogglePassBtn"
+                          Content="👁"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Center"
+                          Width="30"
+                          Height="30"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          FocusVisualStyle="{x:Null}"
+                          Style="{StaticResource EyeToggleButtonStyle}"
+                          Click="TogglePassBtn_Click"
+                          Cursor="Hand"/>
+                 </Grid>
 
                 <TextBlock Text="* Минимум 8 символов, буквы и цифры" FontSize="10" Foreground="Gray" FontStyle="Italic" Margin="0,0,0,20"/>
             </StackPanel>
@@ -187,7 +221,6 @@
                         Command="{Binding ExitCommand}" 
                         Background="Transparent" 
                         Foreground="Gray" 
-                        FontSize="12"
                         Margin="0,15,0,0">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">

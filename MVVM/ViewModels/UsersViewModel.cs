@@ -5,8 +5,6 @@ using System.Windows;
 using ProjectDish.Core;
 using ProjectDish.MVVM.Models;
 using ProjectDish.Services;
-using System.Linq;
-using ProjectDish.MVVM.Views;
 
 namespace ProjectDish.MVVM.ViewModels
 {
@@ -16,9 +14,16 @@ namespace ProjectDish.MVVM.ViewModels
         private UserModel _selectedUser;
         private string _searchText;
         private bool _isBusy;
-
-        public bool IsBusy { get => _isBusy; set { _isBusy = value; OnPropertyChanged(); } }
-
+        private readonly int _currentUserId;
+        public bool IsBusy
+        {
+            get => _isBusy;
+            set
+            {
+                _isBusy = value;
+                OnPropertyChanged();
+            }
+        }
         public ObservableCollection<UserModel> Users { get; set; } = new ObservableCollection<UserModel>();
 
         public UserModel SelectedUser
@@ -28,12 +33,12 @@ namespace ProjectDish.MVVM.ViewModels
             {
                 _selectedUser = value;
                 OnPropertyChanged();
-                UpdateUserCommand.RaiseCanExecuteChanged();
+                OnPropertyChanged(nameof(ToggleBlockText));
                 DeleteUserCommand.RaiseCanExecuteChanged();
                 ToggleAdminRightsCommand.RaiseCanExecuteChanged();
+                ToggleBlockCommand.RaiseCanExecuteChanged();
             }
         }
-
         public string SearchText
         {
             get => _searchText;
@@ -44,26 +49,28 @@ namespace ProjectDish.MVVM.ViewModels
                 _ = LoadData();
             }
         }
-
-        public RelayCommand UpdateUserCommand { get; }
+        public string ToggleBlockText =>
+                 SelectedUser == null
+                     ? "⛔ Блокировать"
+                     : (SelectedUser.IsBlocked == 1 ? "🔓 Разблокировать" : "⛔ Блокировать");
         public RelayCommand DeleteUserCommand { get; }
         public RelayCommand ToggleAdminRightsCommand { get; }
+        public RelayCommand ToggleBlockCommand { get; }
         public RelayCommand CloseCommand { get; }
 
-        public UsersViewModel()
+        public UsersViewModel(int currentUserId)
         {
             if (DesignerProperties.GetIsInDesignMode(new DependencyObject())) return;
+            _currentUserId = currentUserId;
             _userRepository = UserRepository.Instance;
             Logger.Info("Users list window opened");
-
-            UpdateUserCommand = new RelayCommand(async o => await UpdateUser(), o => SelectedUser != null);
             DeleteUserCommand = new RelayCommand(async o => await DeleteUser(), o => SelectedUser != null);
             ToggleAdminRightsCommand = new RelayCommand(async o => await ToggleAdminRights(), o => SelectedUser != null);
+            ToggleBlockCommand = new RelayCommand(async o => await ToggleBlockUser(), o => SelectedUser != null);
             CloseCommand = new RelayCommand(o => (o as Window)?.Close());
 
-            _ = LoadData();
+            _ = LoadData(true);
         }
-
         private async Task LoadData(bool forceRefresh = false)
         {
             IsBusy = true;
@@ -88,7 +95,6 @@ namespace ProjectDish.MVVM.ViewModels
                 IsBusy = false;
             }
         }
-
         private List<UserModel> ApplySearch(List<UserModel> users)
         {
             if (string.IsNullOrWhiteSpace(SearchText))
@@ -99,105 +105,101 @@ namespace ProjectDish.MVVM.ViewModels
                 u.Email.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0)
                 .ToList();
         }
-
         private void UpdateUsersCollection(List<UserModel> source)
         {
-            var sourceDict = source.ToDictionary(s => s.Id);
-            var targetIds = Users.Select(t => t.Id).ToList();
-            foreach (var id in targetIds)
+            int? selectedId = SelectedUser?.Id;
+
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                if (!sourceDict.ContainsKey(id))
+                Users.Clear();
+                foreach (var item in source)
                 {
-                    Application.Current.Dispatcher.Invoke(() => Users.Remove(Users.First(u => u.Id == id)));
+                    Users.Add(item);
                 }
-            }
-            foreach (var sourceItem in source)
+            });
+
+            if (selectedId.HasValue)
             {
-                var targetItem = Users.FirstOrDefault(t => t.Id == sourceItem.Id);
-                if (targetItem == null)
-                {
-                    Application.Current.Dispatcher.Invoke(() => Users.Add(sourceItem));
-                }
-                else
-                {
-                    targetItem.Username = sourceItem.Username;
-                    targetItem.Email = sourceItem.Email;
-                    targetItem.RoleId = sourceItem.RoleId;
-                    targetItem.RoleName = sourceItem.RoleName;
-                }
+                SelectedUser = Users.FirstOrDefault(u => u.Id == selectedId.Value);
             }
         }
-
-        // Метод для обновления пользователя
-        private async Task UpdateUser()
-        {
-            var userToUpdate = SelectedUser;
-            if (userToUpdate == null) return;
-
-            Logger.Info("Opening user edit form", new { user_id = userToUpdate.Id });
-
-            var editForm = new UpdateUserView(userToUpdate.Id);
-            editForm.ShowDialog();
-
-            _userRepository.InvalidateCache();
-            await LoadData(true);
-        }
-
+        // Удаление пользователя
         private async Task DeleteUser()
         {
             var userToDelete = SelectedUser;
             if (userToDelete == null) return;
 
-            if (App.CurrentUser != null && userToDelete.Id == App.CurrentUser.Id)
+            if (userToDelete.Id == _currentUserId)
             {
-                MessageBox.Show("Вы не можете удалить свой собственный аккаунт из этой панели.", "Действие запрещено", MessageBoxButton.OK, MessageBoxImage.Warning);
+                AppDialog.Show("Вы не можете удалить свой собственный аккаунт.", "Действие запрещено", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            if (MessageBox.Show($"Удалить пользователя {userToDelete.Username}?", "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            if (AppDialog.Show($"Удалить пользователя {userToDelete.Username}?", "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
-            Logger.Info("Deleting user", new { user_id = userToDelete.Id });
-            var rpcParams = new { p_user = userToDelete.Id };
-            bool ok = await DatabaseHelper.ExecuteNonQuery("delete_user_and_recipes", rpcParams);
+            bool ok = await DatabaseHelper.ExecuteNonQuery("delete_user_and_recipes", new { p_user = userToDelete.Id });
 
             if (ok)
             {
-                MessageBox.Show("Пользователь удален.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                 _userRepository.InvalidateCache();
-                await LoadData(true);
-            }
-            else
-            {
-                MessageBox.Show("Ошибка удаления.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                Users.Remove(userToDelete);
+                AppDialog.Show("Пользователь удален.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
-
+        // Смена прав доступа
         private async Task ToggleAdminRights()
         {
             var userToToggle = SelectedUser;
             if (userToToggle == null) return;
 
-            if (App.CurrentUser != null && userToToggle.Id == App.CurrentUser.Id && userToToggle.RoleId == 1)
+            // ЗАПРЕТ: Снятие прав с самого себя
+            if (userToToggle.Id == _currentUserId)
             {
-                MessageBox.Show("Вы не можете снять с себя права администратора.", "Действие запрещено", MessageBoxButton.OK, MessageBoxImage.Warning);
+                AppDialog.Show("Вы не можете снять с себя права администратора.", "Действие запрещено", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             int newRole = (userToToggle.RoleId == 1) ? 2 : 1;
-            var rpcParams = new { p_user_id = userToToggle.Id, p_new_role_id = newRole };
-            Logger.Info("Toggling admin rights", new { user_id = userToToggle.Id, new_role = newRole });
 
-            bool ok = await DatabaseHelper.ExecuteNonQuery("set_admin_rights", rpcParams);
+            bool ok = await DatabaseHelper.ExecuteNonQuery("set_admin_rights", new { p_user_id = userToToggle.Id, p_new_role_id = newRole });
+
             if (ok)
             {
-                MessageBox.Show("Права обновлены.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                 _userRepository.InvalidateCache();
-                await LoadData(true);
+
+                userToToggle.RoleId = newRole;
+                userToToggle.RoleName = newRole == 1 ? "Administrator" : "User"; 
+
+                AppDialog.Show("Права обновлены.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        // Блокировка пользователя
+        private async Task ToggleBlockUser()
+        {
+            var userToToggle = SelectedUser;
+            if (userToToggle == null) return;
+            if (userToToggle.Id == _currentUserId) // Запрет блокировки своего аккаунта
+            {
+                AppDialog.Show("Вы не можете заблокировать собственный аккаунт.", "Действие запрещено", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            bool newBlockedState = userToToggle.IsBlocked == 0; // Смена текста кноппки в зависимости от статуса блокировки
+            string action = newBlockedState ? "заблокировать" : "разблокировать";
+            if (AppDialog.Show($"Вы действительно хотите {action} пользователя {userToToggle.Username}?", "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+            bool ok = await DatabaseHelper.ExecuteNonQuery("toggle_user_block", new { p_user_id = userToToggle.Id }); // Вызов функции блокировки пользователя
+            if (ok)
+            {
+                _userRepository.InvalidateCache();
+                userToToggle.IsBlocked = newBlockedState ? 1 : 0;
+                OnPropertyChanged(nameof(ToggleBlockText));
+                ToggleBlockCommand.RaiseCanExecuteChanged();
+                AppDialog.Show($"Пользователь {(newBlockedState ? "заблокирован" : "разблокирован")}.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
-                MessageBox.Show("Ошибка обновления прав.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show("Ошибка изменения статуса блокировки.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

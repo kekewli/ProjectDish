@@ -16,8 +16,36 @@
         <vm:LoginViewModel/>
     </Window.DataContext>
 
-    <!-- КОПИРУЕМ РЕСУРСЫ ИЗ REGISTERVIEW -->
     <Window.Resources>
+        <Style x:Key="EyeToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#FF2E7D32"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Foreground" Value="#FF2E7D32"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Foreground" Value="#FF1B5E20"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <!-- Стиль текстовых полей (Нижняя граница) -->
         <Style TargetType="TextBox">
             <Setter Property="Padding" Value="0,5"/>
@@ -136,16 +164,22 @@
                     <!-- Поле для ввода пароля -->
                     <PasswordBox x:Name="UserPasswordBox" Margin="0,0,35,0"/>
 
-                    <!-- Текстовое поле для показа пароля (изначально скрыто) -->
+                    <!-- Текстовое поле для показа пароля -->
                     <TextBox x:Name="VisiblePasswordBox" Margin="0,0,35,0" Visibility="Collapsed"/>
 
                     <!-- Кнопка "Глаз" -->
-                    <ToggleButton x:Name="TogglePassBtn" 
-                                  Content="👁" 
-                                  HorizontalAlignment="Right" VerticalAlignment="Center"
-                                  Width="30" Height="30"
-                                  Background="Transparent" BorderThickness="0"
-                                  Click="TogglePassBtn_Click" Cursor="Hand"/>
+                    <ToggleButton x:Name="TogglePassBtn"
+                  Content="👁"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Center"
+                      Width="30"
+                      Height="30"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      FocusVisualStyle="{x:Null}"
+                      Style="{StaticResource EyeToggleButtonStyle}"
+                      Click="TogglePassBtn_Click"
+                      Cursor="Hand"/>   
                 </Grid>
 
                 <Button Content="Забыли пароль?" 

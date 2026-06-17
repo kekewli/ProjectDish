@@ -6,10 +6,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Windows;
-using Windows.Devices.Portable;
-
 namespace ProjectDish.MVVM.ViewModels
 {
     public class RecipeViewModel : ViewModelBase
@@ -19,7 +16,6 @@ namespace ProjectDish.MVVM.ViewModels
         private readonly bool _isRequestMode;
         private readonly StorageService _storageService;
         private const string BucketName = "recipeimages";
-
         private string _name;
         private string _description;
         private string _ingredients;
@@ -29,7 +25,6 @@ namespace ProjectDish.MVVM.ViewModels
         private bool _isBusy;
         private string _windowTitle;
         private string _saveButtonText;
-
         public ObservableCollection<CategoryModel> Categories { get; set; } = new ObservableCollection<CategoryModel>();
         public string WindowTitle { get => _windowTitle; set { _windowTitle = value; OnPropertyChanged(); } }
         public string SaveButtonText { get => _saveButtonText; set { _saveButtonText = value; OnPropertyChanged(); } }
@@ -39,11 +34,9 @@ namespace ProjectDish.MVVM.ViewModels
         public CategoryModel SelectedCategory { get => _selectedCategory; set { _selectedCategory = value; OnPropertyChanged(); } }
         public string ImagePath { get => _imagePath; set { _imagePath = value; OnPropertyChanged(); } }
         public bool IsBusy { get => _isBusy; set { _isBusy = value; OnPropertyChanged(); } }
-
         public RelayCommand SaveCommand { get; }
         public RelayCommand UploadImageCommand { get; }
         public RelayCommand CancelCommand { get; }
-
         public RecipeViewModel(int recipeId = -1, int userId = -1, bool isRequest = false)
         {
             if (DesignerProperties.GetIsInDesignMode(new DependencyObject())) return;
@@ -52,7 +45,6 @@ namespace ProjectDish.MVVM.ViewModels
             _userId = userId;
             _isRequestMode = isRequest;
             _storageService = new StorageService();
-
             if (_isRequestMode)
             {
                 WindowTitle = "Предложить новый рецепт";
@@ -63,7 +55,7 @@ namespace ProjectDish.MVVM.ViewModels
                 if (_userId <= 0)
                 {
                     Logger.Warn("User ID is invalid for recipe request", new { user_id = _userId });
-                    MessageBox.Show("Ошибка: Пользователь не авторизован.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AppDialog.Show("Ошибка: Пользователь не авторизован.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                     CancelCommand.Execute(null);
                     return;
                 }
@@ -87,7 +79,6 @@ namespace ProjectDish.MVVM.ViewModels
 
             _ = InitializeAsync();
         }
-
         private async Task InitializeAsync()
         {
             await LoadCategories();
@@ -96,7 +87,6 @@ namespace ProjectDish.MVVM.ViewModels
                 await LoadRecipeData();
             }
         }
-
         private async Task LoadCategories()
         {
             try
@@ -117,10 +107,9 @@ namespace ProjectDish.MVVM.ViewModels
             catch (Exception ex)
             {
                 Logger.Error("Failed to load categories", ex);
-                MessageBox.Show("Не удалось загрузить категории.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show("Не удалось загрузить категории.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
         private async Task LoadRecipeData()
         {
             IsBusy = true;
@@ -145,40 +134,36 @@ namespace ProjectDish.MVVM.ViewModels
             catch (Exception ex)
             {
                 Logger.Error("Failed to load recipe data", ex, new { recipe_id = _recipeId });
-                MessageBox.Show("Не удалось загрузить данные рецепта.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show("Не удалось загрузить данные рецепта.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally { IsBusy = false; }
         }
-
         public void HandleImageDrop(string[] files)
         {
             if (files.Length > 0) ProcessImageFile(files[0]);
         }
-
         private void PickImage()
         {
             var dlg = new OpenFileDialog { Filter = "Image Files|*.jpg;*.jpeg;*.png" };
             if (dlg.ShowDialog() == true) ProcessImageFile(dlg.FileName);
         }
-
         private void ProcessImageFile(string filePath)
         {
             var fi = new FileInfo(filePath);
             if (fi.Length > 50 * 1024 * 1024)
             {
-                MessageBox.Show("Файл слишком большой (>50MB)."); return;
+                AppDialog.Show("Файл слишком большой (>50MB).", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error); return;
             }
             string ext = fi.Extension.ToLowerInvariant();
             if (ext != ".jpg" && ext != ".jpeg" && ext != ".png")
             {
-                MessageBox.Show("Только JPG и PNG."); return;
+                AppDialog.Show("Только JPG и PNG.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error); return;
             }
-
             _localFilePath = filePath;
             ImagePath = filePath;
             Logger.Info("Image selected", new { path = filePath, size = fi.Length });
         }
-
+        // Сохранение рецепта
         private async Task SaveRecipe()
         {
             if (IsBusy) return;
@@ -187,15 +172,14 @@ namespace ProjectDish.MVVM.ViewModels
 
             if (string.IsNullOrEmpty(ImagePath) && string.IsNullOrEmpty(_localFilePath))
             {
-                MessageBox.Show("Необходимо добавить изображение.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error); return;
+                AppDialog.Show("Необходимо добавить изображение.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error); return;
             }
-
             IsBusy = true;
             try
             {
                 string finalImageUrl = ImagePath;
 
-                // Загрузка изображения только если это новый файл
+                // Загрузка изображения
                 if (!string.IsNullOrEmpty(_localFilePath) && !_localFilePath.StartsWith("http"))
                 {
                     Logger.Info("Uploading image to storage...");
@@ -210,11 +194,10 @@ namespace ProjectDish.MVVM.ViewModels
                     catch (Exception uploadEx)
                     {
                         Logger.Error("Image upload failed", uploadEx);
-                        MessageBox.Show($"Ошибка загрузки изображения: {uploadEx.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        AppDialog.Show($"Ошибка загрузки изображения: {uploadEx.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
                 }
-
                 bool success = false;
 
                 if (_isRequestMode)
@@ -238,14 +221,13 @@ namespace ProjectDish.MVVM.ViewModels
             catch (Exception ex)
             {
                 Logger.Error("Critical error saving recipe/request", ex);
-                MessageBox.Show($"Ошибка сохранения: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show($"Ошибка сохранения: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 IsBusy = false;
             }
         }
-
         private async Task<bool> SubmitUserRequest(string imageUrl)
         {
             try
@@ -267,24 +249,23 @@ namespace ProjectDish.MVVM.ViewModels
                 if (result)
                 {
                     Logger.Info("User recipe request submitted successfully");
-                    MessageBox.Show("Рецепт отправлен на рассмотрение!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    AppDialog.Show("Рецепт отправлен на рассмотрение!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                     return true;
                 }
                 else
                 {
                     Logger.Error("User recipe request failed - RPC returned false");
-                    MessageBox.Show("Ошибка при отправке рецепта. Попробуйте позже.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AppDialog.Show("Ошибка при отправке рецепта. Попробуйте позже.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                     return false;
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("SubmitUserRequest exception", ex);
-                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
-
         private async Task<bool> AddRecipeAsAdmin(string imageUrl)
         {
             try
@@ -297,30 +278,27 @@ namespace ProjectDish.MVVM.ViewModels
                     p_cat_id = SelectedCategory.Id,
                     p_image_url = imageUrl
                 };
-
                 bool result = await DatabaseHelper.ExecuteNonQuery("add_recipe", rpcParams);
-
                 if (result)
                 {
                     Logger.Info("New recipe added by admin", new { name = Name });
-                    MessageBox.Show("Рецепт добавлен!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    AppDialog.Show("Рецепт добавлен!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                     return true;
                 }
                 else
                 {
                     Logger.Error("Add recipe failed - RPC returned false");
-                    MessageBox.Show("Ошибка при добавлении рецепта.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AppDialog.Show("Ошибка при добавлении рецепта.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                     return false;
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("AddRecipeAsAdmin exception", ex);
-                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
-
         private async Task<bool> UpdateRecipeAsAdmin(string imageUrl)
         {
             try
@@ -334,51 +312,44 @@ namespace ProjectDish.MVVM.ViewModels
                     p_cat = SelectedCategory.Id,
                     p_image_url = imageUrl
                 };
-
                 bool result = await DatabaseHelper.ExecuteNonQuery("update_recipe", updateParams);
 
                 if (result)
                 {
                     Logger.Info("Recipe updated by admin", new { id = _recipeId });
-                    MessageBox.Show("Рецепт обновлен!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    AppDialog.Show("Рецепт обновлен!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                     return true;
                 }
                 else
                 {
                     Logger.Error("Update recipe failed - RPC returned false");
-                    MessageBox.Show("Ошибка при обновлении рецепта.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AppDialog.Show("Ошибка при обновлении рецепта.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                     return false;
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("UpdateRecipeAsAdmin exception", ex);
-                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
-
         private bool ValidateInput()
         {
             if (string.IsNullOrWhiteSpace(Name))
-            { MessageBox.Show("Введите название рецепта.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
-
+            { AppDialog.Show("Введите название рецепта.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
             if (string.IsNullOrWhiteSpace(Description))
-            { MessageBox.Show("Введите описание.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
-
+            { AppDialog.Show("Введите описание.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
             if (string.IsNullOrWhiteSpace(Ingredients))
-            { MessageBox.Show("Введите ингредиенты.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
-
+            { AppDialog.Show("Введите ингредиенты.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
             if (SelectedCategory == null)
-            { MessageBox.Show("Выберите категорию.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
-
-            // Упрощённая валидация - только проверка на пустоту и длину
+            { AppDialog.Show("Выберите категорию.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
+            // Валидация -  проверка на пустоту и длину
             if (Name.Length > 200)
-            { MessageBox.Show("Название слишком длинное (макс. 200 символов).", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
+            { AppDialog.Show("Название слишком длинное (макс. 200 символов).", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
 
             return true;
         }
-
         private void CloseWindow(Window window) => window?.Close();
     }
 }

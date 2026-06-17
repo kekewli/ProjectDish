@@ -1,8 +1,4 @@
-﻿using ProjectDish.MVVM.Models;
-using System;
-using System.Data;
-using System.Threading.Tasks;
-
+﻿using System.Data;
 namespace ProjectDish.Services
 {
     internal class RecipeDetailsRepository
@@ -21,7 +17,6 @@ namespace ProjectDish.Services
                     return cachedData;
                 }
             }
-
             try
             {
                 Logger.Info("Fetching recipe details from DB", new { recipe_id = recipeId });
@@ -39,7 +34,6 @@ namespace ProjectDish.Services
             }
             return null;
         }
-
         // Метод для очистки кэша конкретного рецепта
         public void InvalidateCache(int recipeId)
         {

@@ -1,8 +1,6 @@
 ﻿using System.Configuration;
 using System.Net;
 using System.Net.Mail;
-using System.Threading.Tasks;
-
 namespace ProjectDish.Services
 {
     public class EmailService
@@ -13,7 +11,6 @@ namespace ProjectDish.Services
         private static readonly string SmtpUser = ConfigurationManager.AppSettings["SmtpUser"];
         private static readonly string SmtpPassword = ConfigurationManager.AppSettings["SmtpPassword"];
         private static readonly string FromEmail = ConfigurationManager.AppSettings["FromEmail"];
-
         public static async Task SendPasswordResetCodeAsync(string toEmail, string code)
         {
             string subject = "Восстановление пароля в ProjectDishes";
@@ -26,7 +23,6 @@ namespace ProjectDish.Services
                 EnableSsl = SmtpUseSsl,
                 Credentials = new NetworkCredential(SmtpUser, SmtpPassword)
             };
-
             await smtp.SendMailAsync(message);
         }
     }

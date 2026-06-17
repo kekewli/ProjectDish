@@ -1,6 +1,4 @@
-﻿
-
-namespace ProjectDish.MVVM.Models
+﻿namespace ProjectDish.MVVM.Models
 {
     public class CategoryModel
     {

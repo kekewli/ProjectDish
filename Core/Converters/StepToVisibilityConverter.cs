@@ -1,8 +1,6 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
-
 namespace ProjectDish.Core.Converters
 {
     internal class StepToVisibilityConverter : IValueConverter
@@ -13,7 +11,6 @@ namespace ProjectDish.Core.Converters
                 return Visibility.Collapsed;
             return value.ToString() == parameter.ToString() ? Visibility.Visible : Visibility.Collapsed;
         }
-
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();

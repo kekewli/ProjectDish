@@ -1,4 +1,5 @@
-﻿using ProjectDish.MVVM.ViewModels;
+﻿using ProjectDish.Core;
+using ProjectDish.MVVM.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -28,6 +29,7 @@ namespace ProjectDish.MVVM.Views
             InitializeComponent();
             _viewModel = new UserStorageViewModel(userId);
             DataContext = _viewModel;
+            FadeWindowBehavior.Attach(this);
         }
         private void Window_Closing(object sender, CancelEventArgs e)
         {

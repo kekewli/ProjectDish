@@ -3,6 +3,7 @@ using ProjectDish.MVVM.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 using ProjectDish.MVVM.ViewModels;
+using ProjectDish.Core;
 
 namespace ProjectDish.MVVM.Views
 {
@@ -11,10 +12,11 @@ namespace ProjectDish.MVVM.Views
     /// </summary>
     public partial class AdminView : Window
     {
-        public AdminView()
+        public AdminView(int userId)
         {
             InitializeComponent();
-            DataContext = new AdminViewModel();
+            DataContext = new AdminViewModel(userId);
+            FadeWindowBehavior.Attach(this);
         }
 
         private void ListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

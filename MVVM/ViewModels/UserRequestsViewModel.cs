@@ -13,9 +13,7 @@ namespace ProjectDish.MVVM.ViewModels
     {
         private RequestModel _selectedRequest;
         private bool _isBusy;
-
         public ObservableCollection<RequestModel> Requests { get; set; } = new ObservableCollection<RequestModel>();
-
         public RequestModel SelectedRequest
         {
             get => _selectedRequest;
@@ -36,7 +34,6 @@ namespace ProjectDish.MVVM.ViewModels
         public RelayCommand RejectRequestCommand { get; }
         public RelayCommand CloseCommand { get; }
         public RelayCommand OpenDetailsCommand { get; }
-
         public UserRequestsViewModel()
         {
             if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
@@ -60,7 +57,6 @@ namespace ProjectDish.MVVM.ViewModels
             });
             _ = LoadRequests();
         }
-
         private async Task LoadRequests()
         {
             IsBusy = true;
@@ -68,9 +64,7 @@ namespace ProjectDish.MVVM.ViewModels
             {
                 Logger.Info("Loading user recipe requests...");
                 var dt = await DatabaseHelper.ExecuteQuery("get_user_recipe_requests");
-
                 Logger.Info($"Database returned {dt.Rows.Count} rows");
-
                 Requests.Clear();
                 foreach (DataRow row in dt.Rows)
                 {
@@ -96,23 +90,20 @@ namespace ProjectDish.MVVM.ViewModels
             catch (Exception ex)
             {
                 Logger.Error("Failed to load user requests", ex, new { });
-                MessageBox.Show($"Ошибка загрузки запросов: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show($"Ошибка загрузки запросов: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 IsBusy = false;
             }
         }
-
         private async Task ApproveRequest()
         {
             var requestToProcess = SelectedRequest;
             if (requestToProcess == null) return;
-
-            if (MessageBox.Show($"Одобрить запрос на рецепт \"{requestToProcess.RecipeName}\"?",
+            if (AppDialog.Show($"Одобрить запрос на рецепт \"{requestToProcess.RecipeName}\"?",
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
-
             IsBusy = true;
             try
             {
@@ -127,26 +118,25 @@ namespace ProjectDish.MVVM.ViewModels
                 else
                 {
                     Logger.Warn("Failed to approve request - RPC returned false", new { request_id = requestToProcess.Id });
-                    MessageBox.Show("Не удалось одобрить запрос.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AppDialog.Show("Не удалось одобрить запрос.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("ApproveRequest exception", ex, new { request_id = requestToProcess.Id });
-                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 IsBusy = false;
             }
         }
-
         private async Task RejectRequest()
         {
             var requestToProcess = SelectedRequest;
             if (requestToProcess == null) return;
 
-            if (MessageBox.Show($"Отклонить рецепт \"{requestToProcess.RecipeName}\"?",
+            if (AppDialog.Show($"Отклонить рецепт \"{requestToProcess.RecipeName}\"?",
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
 
@@ -164,13 +154,13 @@ namespace ProjectDish.MVVM.ViewModels
                 else
                 {
                     Logger.Warn("Failed to delete request - RPC returned false", new { request_id = requestToProcess.Id });
-                    MessageBox.Show("Не удалось отклонить запрос.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AppDialog.Show("Не удалось отклонить запрос.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("RejectRequest exception", ex, new { request_id = requestToProcess.Id });
-                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {

@@ -14,7 +14,8 @@ namespace ProjectDish.Services
         public static Supabase.Client Client { get; private set; }
 
         private static bool _offlineMessageShown = false;
-
+        public static bool ForceEnsureClientInitFailureForTests { get; set; } = false;
+        public static bool SuppressUiDialogsForTests { get; set; } = false;
         static DatabaseHelper()
         {
             try
@@ -36,9 +37,12 @@ namespace ProjectDish.Services
                 Logger.Error("Failed to read App.config", ex);
             }
         }
-
+        public static void SetCredentials(string url, string key)
+        {
+            SupabaseUrl = url;
+            SupabaseKey = key;
+        }
         public static Supabase.Client GetClient() => Client;
-
         // Проверка интернет-соединения
         private static bool HasInternet()
         {
@@ -74,7 +78,13 @@ namespace ProjectDish.Services
                 return false;
             }
         }
-
+        public static void ResetForTests()
+        {
+            Client = null;
+            _offlineMessageShown = false;
+            ForceEnsureClientInitFailureForTests = false;
+            SuppressUiDialogsForTests = true;
+        }
         // Инициализация клиента Supabase
         private static async Task<bool> EnsureClientAsync()
         {
@@ -85,8 +95,9 @@ namespace ProjectDish.Services
             {
                 if (!_offlineMessageShown)
                 {
-                    string msg = "Ошибка конфигурации: Не найдены ключи подключения к БД.\nПроверьте файл App.config.";
-                    MessageBox.Show(msg, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    string msg = "Ошибка конфигурации: Не найдены ключи подключения к БД.";
+                    if (!SuppressUiDialogsForTests)
+                        AppDialog.Show(msg, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                     Logger.Error("Connection aborted: Missing configuration keys");
                     _offlineMessageShown = true;
                 }
@@ -99,15 +110,18 @@ namespace ProjectDish.Services
             {
                 if (!_offlineMessageShown)
                 {
-                    MessageBox.Show("Отсутствует подключение к интернету.", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    if (!SuppressUiDialogsForTests)
+                        AppDialog.Show("Отсутствует подключение к интернету.", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                     Logger.Warn("Connection aborted: No internet access");
                     _offlineMessageShown = true;
                 }
                 return false;
             }
-
             try
             {
+                if (ForceEnsureClientInitFailureForTests)
+                    throw new InvalidOperationException("Forced failure for tests");
+
                 var options = new Supabase.SupabaseOptions
                 {
                     AutoRefreshToken = true,
@@ -124,12 +138,12 @@ namespace ProjectDish.Services
             catch (Exception ex)
             {
                 Logger.Error("CRITICAL: Failed to initialize Supabase client", ex);
-                MessageBox.Show($"Ошибка подключения к серверу: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (!SuppressUiDialogsForTests)
+                    AppDialog.Show($"Ошибка подключения к серверу: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 Client = null;
                 return false;
             }
         }
-
         // Вызов RPC функции без возвращаемого значения
         public static async Task<bool> ExecuteNonQuery(string functionName, object parameters = null)
         {
@@ -146,14 +160,11 @@ namespace ProjectDish.Services
                 return false;
             }
         }
-
         // Вызов RPC функции с возвратом таблицы данных
         public static async Task<DataTable> ExecuteQuery(string functionName, object parameters = null)
         {
             var dt = new DataTable();
-
             if (!await EnsureClientAsync()) return dt;
-
             try
             {
                 var result = await Client.Rpc(functionName, parameters);
@@ -169,7 +180,6 @@ namespace ProjectDish.Services
             }
             return dt;
         }
-
         // Вызов RPC функции с возвратом дробного числа
         public static async Task<decimal?> ExecuteRpcScalarAsync(string functionName, object parameters = null)
         {
@@ -189,12 +199,10 @@ namespace ProjectDish.Services
                 return null;
             }
         }
-
         // Вызов RPC функции с возвратом целого числа
         public static async Task<int> ExecuteNonQueryWithReturnValueAsync(string functionName, object parameters = null)
         {
             if (!await EnsureClientAsync()) return -1;
-
             try
             {
                 var result = await Client.Rpc(functionName, parameters);

@@ -30,7 +30,6 @@ namespace ProjectDish.MVVM.ViewModels
                 AddToFavoritesCommand.RaiseCanExecuteChanged();
             }
         }
-
         public string SearchText
         {
             get => _searchText;
@@ -42,7 +41,6 @@ namespace ProjectDish.MVVM.ViewModels
                 _ = LoadData();
             }
         }
-
         public int SelectedSortIndex
         {
             get => _selectedSortIndex;
@@ -54,19 +52,17 @@ namespace ProjectDish.MVVM.ViewModels
                 _ = LoadData();
             }
         }
-
         public RelayCommand OpenDetailsCommand { get; }
         public RelayCommand AddToFavoritesCommand { get; }
         public RelayCommand OpenFavoritesCommand { get; }
         public RelayCommand CreateRecipeRequestCommand { get; }
         public RelayCommand LogoutCommand { get; }
-
+        public RelayCommand OpenUpdateUserCommand { get; }
         public UserViewModel(int userId)
         {
             if (DesignerProperties.GetIsInDesignMode(new DependencyObject())) return;
             _userId = userId;
             Logger.Info("User dashboard initialized", new { user_id = _userId });
-
             OpenDetailsCommand = new RelayCommand(o =>
             {
                 if (o is int recipeId)
@@ -79,7 +75,15 @@ namespace ProjectDish.MVVM.ViewModels
                     _ = LoadData();
                 }
             });
+            OpenUpdateUserCommand = new RelayCommand(o =>
+            {
+                Logger.Info("User opening update profile form", new { user_id = _userId });
 
+                var updateForm = new UpdateUserView(_userId);
+                updateForm.ShowDialog(); 
+
+                OnPropertyChanged(nameof(UserName));
+            });
             AddToFavoritesCommand = new RelayCommand(async o => await AddToFavorites(), o => SelectedRecipe != null);
             OpenFavoritesCommand = new RelayCommand(o => OpenFavorites());
             CreateRecipeRequestCommand = new RelayCommand(o => CreateRecipeRequest());
@@ -90,9 +94,7 @@ namespace ProjectDish.MVVM.ViewModels
                 new LoginView().Show();
                 CloseCurrentWindow();
             });
-
             _ = LoadData();
-
             // Таймер для автообновления - увеличил интервал до 60 секунд (вместо 10)
             _timer = new DispatcherTimer
             {
@@ -101,13 +103,11 @@ namespace ProjectDish.MVVM.ViewModels
             _timer.Tick += async (s, e) => await LoadData();
             _timer.Start();
         }
-
         private async Task LoadData()
         {
             try
             {
                 List<RecipeModel> newItems;
-
                 // Поиск не кэшируем, загружаем из БД
                 if (!string.IsNullOrWhiteSpace(SearchText))
                 {
@@ -124,7 +124,6 @@ namespace ProjectDish.MVVM.ViewModels
                     Logger.Warn("No recipes loaded.");
                     return;
                 }
-
                 // Сортировка
                 switch (SelectedSortIndex)
                 {
@@ -132,7 +131,6 @@ namespace ProjectDish.MVVM.ViewModels
                     case 2: newItems = newItems.OrderBy(x => x.Rating).ToList(); break;
                     case 3: newItems = newItems.OrderBy(x => x.Name).ToList(); break;
                 }
-
                 // Сохранение выделенного элемента
                 int? savedId = SelectedRecipe?.Id;
                 Recipes.Clear();
@@ -147,7 +145,6 @@ namespace ProjectDish.MVVM.ViewModels
                 Logger.Error("Failed to load recipes data for user", ex, new { user_id = _userId });
             }
         }
-
         private async Task AddToFavorites()
         {
             var rpcParams = new { p_user = _userId, p_recipe = SelectedRecipe.Id };
@@ -157,34 +154,33 @@ namespace ProjectDish.MVVM.ViewModels
                 bool added = await DatabaseHelper.ExecuteNonQuery("add_recipe_to_user_storage", rpcParams);
                 if (added)
                 {
-                    MessageBox.Show("Рецепт добавлен в избранное.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    AppDialog.Show("Рецепт добавлен в избранное.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
-                    MessageBox.Show("Этот рецепт уже находится в вашем избранном.", "Внимание", MessageBoxButton.OK, MessageBoxImage.Information);
+                    AppDialog.Show("Этот рецепт уже находится в вашем избранном.", "Внимание", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("Failed to add recipe to favorites", ex, new { user_id = _userId, recipe_id = SelectedRecipe.Id });
-                MessageBox.Show($"Ошибка при добавлении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show($"Ошибка при добавлении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
+        // Открытие окна избранных рецептов
         private void OpenFavorites()
         {
             Logger.Info("User opening favorites", new { user_id = _userId });
             var storageForm = new UserStorageView(_userId);
             storageForm.ShowDialog();
         }
-
+        // Открытие отрытие окна создание запроса
         private void CreateRecipeRequest()
         {
             Logger.Info("User opening 'create recipe request' form", new { user_id = _userId });
             var requestForm = new RecipeView(recipeId: -1, userId: _userId, isRequest: true);
             requestForm.ShowDialog();
         }
-
         private void CloseCurrentWindow()
         {
             foreach (Window window in Application.Current.Windows)

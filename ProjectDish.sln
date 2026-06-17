@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectDish", "ProjectDish.
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ProjectDishSetup", "ProjectDishSetup\ProjectDishSetup.vdproj", "{776FE0FA-CF00-42A8-9055-C83E46A27FC6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "..\Tests\Tests.csproj", "{9E88FF37-04FB-4913-883F-F4160A2B6480}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +21,10 @@ Global
 		{86042C0D-557F-4519-8294-2A7B27DA4B5C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{776FE0FA-CF00-42A8-9055-C83E46A27FC6}.Debug|Any CPU.ActiveCfg = Debug
 		{776FE0FA-CF00-42A8-9055-C83E46A27FC6}.Release|Any CPU.ActiveCfg = Release
+		{9E88FF37-04FB-4913-883F-F4160A2B6480}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E88FF37-04FB-4913-883F-F4160A2B6480}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E88FF37-04FB-4913-883F-F4160A2B6480}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E88FF37-04FB-4913-883F-F4160A2B6480}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

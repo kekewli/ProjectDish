@@ -6,81 +6,92 @@ using System.Windows.Controls;
 using System.Windows;
 using System.Data;
 using System.Security.Cryptography;
+using ProjectDish.MVVM.Models;
 namespace ProjectDish.MVVM.ViewModels
 {
     public class LoginViewModel : ViewModelBase
     {
         private string _userName;
         private bool _isBusy;
-
         // Логин пользователя
         public string UserName
         {
             get => _userName;
             set { _userName = value; OnPropertyChanged(); }
         }
-
         public bool IsBusy
         {
             get => _isBusy;
             set { _isBusy = value; OnPropertyChanged(); }
         }
-
         // Команды
         public RelayCommand LoginCommand { get; set; }
         public RelayCommand NavigateToRegisterCommand { get; set; }
         public RelayCommand ForgotPasswordCommand { get; set; }
         public RelayCommand ExitCommand { get; set; }
-
         public LoginViewModel()
         {
             // Кнопка войти
             LoginCommand = new RelayCommand(async (o) => await ExecuteLogin(o));
-
             // Переход на регистрацию
             NavigateToRegisterCommand = new RelayCommand(o => OpenWindowAndCloseCurrent(new RegisterView()));
-
             // Восстановления пароля
             ForgotPasswordCommand = new RelayCommand(o => new PasswordResetView().ShowDialog());
-
             // Выход
             ExitCommand = new RelayCommand(o => Application.Current.Shutdown());
         }
-
         // Логика входа
         private async Task ExecuteLogin(object parameter)
         {
             var passwordBox = parameter as PasswordBox;
             string password = passwordBox?.Password;
-
             if (string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(password))
             {
-                MessageBox.Show("Введите логин и пароль.", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                AppDialog.Show("Введите логин и пароль.", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-
             IsBusy = true;
-
             Logger.Info("Login attempt initiated", new { username = UserName });
-
             try
             {
                 string hashedPassword = HashPassword(password);
                 var rpcParams = new { p_name = UserName, p_pass = hashedPassword };
-
                 DataTable result = await DatabaseHelper.ExecuteQuery("login_user", rpcParams);
-
                 if (result.Rows.Count > 0)
                 {
+                    int isBlocked = Convert.ToInt32(result.Rows[0]["is_blocked"]);
+                    if (isBlocked == 1)
+                    {
+                        Logger.Warn("Login failed: User is blocked", new { username = UserName });
+                        AppDialog.Show(
+                            "Ваш аккаунт заблокирован администратором.\nДоступ к системе закрыт.",
+                            "Аккаунт заблокирован",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                        return;
+                    }
                     int roleId = Convert.ToInt32(result.Rows[0]["role_id"]);
                     int userId = Convert.ToInt32(result.Rows[0]["user_id"]);
-
+                    DataTable userDt = await DatabaseHelper.ExecuteQuery("get_user_by_id", new { p_user = userId });
+                    if (userDt != null && userDt.Rows.Count > 0)
+                    {
+                        App.CurrentUser = new UserModel
+                        {
+                            Id = userId,
+                            Username = userDt.Rows[0]["user_name"].ToString(),
+                            Email = userDt.Rows[0]["email"].ToString(),
+                            RoleId = roleId
+                        };
+                    }
+                    else
+                    {
+                        App.CurrentUser = new UserModel { Id = userId, Username = UserName, RoleId = roleId };
+                    }
                     Logger.Info("Login successful", new { user_id = userId, role_id = roleId, username = UserName });
-
                     if (roleId == 1)
                     {
                         // Панель администратора
-                        OpenWindowAndCloseCurrent(new AdminView());
+                        OpenWindowAndCloseCurrent(new AdminView(userId));
                     }
                     else
                     {
@@ -91,19 +102,19 @@ namespace ProjectDish.MVVM.ViewModels
                 else
                 {
                     Logger.Warn("Login failed: Invalid credentials", new { username = UserName });
-                    MessageBox.Show("Неверный логин или пароль.", "Ошибка авторизации", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AppDialog.Show("Неверный логин или пароль.", "Ошибка авторизации", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("System error during login process", ex, new { username = UserName });
+                AppDialog.Show("Произошла ошибка при подключении к серверу.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 IsBusy = false;
-            }
+            }   
         }
-
         // Метод хеширования
         private string HashPassword(string password)
         {
@@ -117,7 +128,6 @@ namespace ProjectDish.MVVM.ViewModels
                 return sb.ToString();
             }
         }
-
         // Вспомогательный метод для смены окон
         private void OpenWindowAndCloseCurrent(Window newWindow)
         {

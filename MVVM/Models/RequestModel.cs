@@ -1,5 +1,4 @@
 ﻿using ProjectDish.Core;
-
 namespace ProjectDish.MVVM.Models
 {
     class RequestModel : ViewModelBase

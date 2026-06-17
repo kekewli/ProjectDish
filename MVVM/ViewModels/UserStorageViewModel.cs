@@ -2,16 +2,11 @@
 using ProjectDish.MVVM.Models;
 using ProjectDish.MVVM.Views;
 using ProjectDish.Services;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
-
 namespace ProjectDish.MVVM.ViewModels
 {
     public class UserStorageViewModel : ViewModelBase
@@ -49,7 +44,6 @@ namespace ProjectDish.MVVM.ViewModels
         public RelayCommand OpenDetailsCommand { get; }
         public RelayCommand DeleteFromFavoritesCommand { get; }
         public RelayCommand CloseCommand { get; }
-
         public UserStorageViewModel(int userId)
         {
             if (DesignerProperties.GetIsInDesignMode(new DependencyObject())) return;
@@ -93,7 +87,6 @@ namespace ProjectDish.MVVM.ViewModels
                     dt = await DatabaseHelper.ExecuteQuery("search_user_recipes", rpcParams);
                     Logger.Info($"search_user_recipes returned {dt.Rows.Count} rows", new { user_id = _userId, query = SearchText });
                 }
-
                 var newItems = new List<RecipeModel>();
                 foreach (DataRow row in dt.Rows)
                 {
@@ -119,7 +112,7 @@ namespace ProjectDish.MVVM.ViewModels
             catch (Exception ex)
             {
                 Logger.Error("Failed to load user storage recipes", ex, new { user_id = _userId });
-                MessageBox.Show($"Ошибка загрузки избранного: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show($"Ошибка загрузки избранного: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         // Удаление из избранного
@@ -129,7 +122,7 @@ namespace ProjectDish.MVVM.ViewModels
             if (recipeToDelete == null) return;
             _timer.Stop();
             Logger.Info("Delete recipe from storage requested", new { recipe_id = recipeToDelete.Id, user_id = _userId });
-            var result = MessageBox.Show($"Удалить '{recipeToDelete.Name}' из избранного?",
+            var result = AppDialog.Show($"Удалить '{recipeToDelete.Name}' из избранного?",
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes)
             {
@@ -146,18 +139,17 @@ namespace ProjectDish.MVVM.ViewModels
                     else
                     {
                         Logger.Warn("Failed to remove recipe from storage - RPC returned false", new { recipe_id = recipeToDelete.Id });
-                        MessageBox.Show("Ошибка при удалении рецепта.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        AppDialog.Show("Ошибка при удалении рецепта.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
                 catch (Exception ex)
                 {
                     Logger.Error("Exception during recipe removal from storage", ex, new { recipe_id = recipeToDelete.Id });
-                    MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AppDialog.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             _timer.Start();
         }
-
         // Очистка таймера при закрытии окна
         public void OnWindowClosing()
         {

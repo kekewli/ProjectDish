@@ -1,4 +1,5 @@
-﻿using ProjectDish.MVVM.ViewModels;
+﻿using ProjectDish.Core;
+using ProjectDish.MVVM.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,7 @@ namespace ProjectDish.MVVM.Views
         {
             InitializeComponent();
             DataContext = new PasswordResetViewModel();
+            FadeWindowBehavior.Attach(this);
         }
     }
 }

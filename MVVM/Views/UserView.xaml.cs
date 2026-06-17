@@ -1,4 +1,5 @@
-﻿using ProjectDish.MVVM.ViewModels;
+﻿using ProjectDish.Core;
+using ProjectDish.MVVM.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,12 @@ namespace ProjectDish.MVVM.Views
         {
             InitializeComponent();
             DataContext = new UserViewModel(userId);
+            FadeWindowBehavior.Attach(this);
+        }
+
+        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
         }
     }
 }

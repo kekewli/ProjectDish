@@ -98,12 +98,12 @@
                                 <StackPanel Grid.Column="1" Margin="10,10,0,10" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding RecipeName}" FontWeight="Bold" FontSize="16" TextTrimming="CharacterEllipsis"/>
                                     <TextBlock Margin="0,5,0,0" Foreground="Gray">
-                                        <Run Text="От пользователя: "/>
-                                        <Run Text="{Binding UserName}" FontWeight="SemiBold" Foreground="#FF2E7D32"/>
+                                        <!--<Run Text="От пользователя: "/>
+                                        <Run Text="{Binding UserName}" FontWeight="SemiBold" Foreground="#FF2E7D32"/>-->
                                     </TextBlock>
                                 </StackPanel>
 
-                                <!-- Кнопка просмотра (ИСПРАВЛЕНО: Grid.Column="2" теперь существует) -->
+                                <!-- Кнопка просмотра -->
                                 <Button Grid.Column="2" Content="👁"
                                     ToolTip="Просмотреть детали"
                                     Command="{Binding DataContext.OpenDetailsCommand, RelativeSource={RelativeSource AncestorType=Window}}"

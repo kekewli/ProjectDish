@@ -1,6 +1,5 @@
 ﻿using System.Globalization;
 using System.Windows.Data;
-
 namespace ProjectDish.Core.Converters
 {
     internal class InverseBooleanConverter : IValueConverter
@@ -13,7 +12,6 @@ namespace ProjectDish.Core.Converters
             }
             return value;
         }
-
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is bool booleanValue)

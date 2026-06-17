@@ -245,7 +245,7 @@
 
                     <!-- Описание -->
                     <StackPanel Grid.Row="2" Margin="0,0,0,20">
-                        <TextBlock Text="Описание приготовления" Style="{StaticResource LabelText}"/>
+                        <TextBlock Text="Описание" Style="{StaticResource LabelText}"/>
                         <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
                                  TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
                                  Height="80" VerticalContentAlignment="Top" Padding="5"/>
@@ -253,7 +253,7 @@
 
                     <!-- Ингредиенты -->
                     <StackPanel Grid.Row="3">
-                        <TextBlock Text="Ингредиенты (каждый с новой строки)" Style="{StaticResource LabelText}"/>
+                        <TextBlock Text="Ингредиенты" Style="{StaticResource LabelText}"/>
                         <TextBox Text="{Binding Ingredients, UpdateSourceTrigger=PropertyChanged}" 
                                  TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
                                  Height="80" VerticalContentAlignment="Top" Padding="5"/>

@@ -83,27 +83,74 @@
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Margin" Value="2,0"/>
             <Setter Property="Content" Value="☆"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="Transparent" Padding="2" Width="35" Height="35">
-                            <TextBlock Text="{TemplateBinding Content}" 
-                                       FontSize="{TemplateBinding FontSize}" 
-                                       Foreground="{TemplateBinding Foreground}" 
-                                       HorizontalAlignment="Center" 
-                                       VerticalAlignment="Center"/>
+                        <Border x:Name="root"
+                        Background="Transparent"
+                        Padding="2"
+                        Width="36"
+                        Height="36">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="starScale" ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+
+                            <TextBlock x:Name="starText"
+                               Text="{TemplateBinding Content}"
+                               FontSize="{TemplateBinding FontSize}"
+                               Foreground="{TemplateBinding Foreground}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
                         </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="root" Property="Background" Value="#1A000000"/>
+                                <Setter Property="Foreground" Value="Gold"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="starScale"
+                                                     Storyboard.TargetProperty="ScaleX"
+                                                     To="1.12"
+                                                     Duration="0:0:0.12"/>
+                                            <DoubleAnimation Storyboard.TargetName="starScale"
+                                                     Storyboard.TargetProperty="ScaleY"
+                                                     To="1.12"
+                                                     Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="starScale"
+                                                     Storyboard.TargetProperty="ScaleX"
+                                                     To="1"
+                                                     Duration="0:0:0.12"/>
+                                            <DoubleAnimation Storyboard.TargetName="starScale"
+                                                     Storyboard.TargetProperty="ScaleY"
+                                                     To="1"
+                                                     Duration="0:0:0.12"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="root" Property="Background" Value="#22000000"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsFilled}" Value="True">
                     <Setter Property="Foreground" Value="Goldenrod"/>
                     <Setter Property="Content" Value="★"/>
                 </DataTrigger>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Foreground" Value="Gold"/>
-                </Trigger>
             </Style.Triggers>
         </Style>
 
@@ -216,24 +263,81 @@
                                                   Content="Оценить рецепт" 
                                                   Style="{StaticResource ActionToggleButton}"/>
 
-                                    <!-- Звёзды через ItemsControl - закрашиваются по IsFilled -->
-                                    <ItemsControl ItemsSource="{Binding Stars}" 
-                                                  Visibility="{Binding IsRatingPanelVisible, Converter={StaticResource BoolToVisConverter}}"
-                                                  Margin="0,10,0,0">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Button Style="{StaticResource StarButton}" 
-                                                        Command="{Binding DataContext.RateRecipeCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                    <Border Margin="0,12,0,0"
+                                        CornerRadius="12"
+                                        Background="#FAFAFA"
+                                        BorderBrush="#E8E8E8"
+                                        BorderThickness="1"
+                                        Padding="10"
+                                        ClipToBounds="True">
+                                        <Border.RenderTransform>
+                                            <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                                        </Border.RenderTransform>
+
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Opacity" Value="0"/>
+                                                <Setter Property="MaxHeight" Value="0"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsRatingPanelVisible}" Value="True">
+                                                        <DataTrigger.EnterActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                 To="1"
+                                                 Duration="0:0:0.20"/>
+                                                                    <DoubleAnimation Storyboard.TargetProperty="MaxHeight"
+                                                 To="80"
+                                                 Duration="0:0:0.20"/>
+                                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)"
+                                                 To="1"
+                                                 Duration="0:0:0.20"/>
+                                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)"
+                                                 To="1"
+                                                 Duration="0:0:0.20"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </DataTrigger.EnterActions>
+                                                        <DataTrigger.ExitActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                 To="0"
+                                                 Duration="0:0:0.15"/>
+                                                                    <DoubleAnimation Storyboard.TargetProperty="MaxHeight"
+                                                 To="0"
+                                                 Duration="0:0:0.15"/>
+                                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)"
+                                                 To="0.95"
+                                                 Duration="0:0:0.15"/>
+                                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)"
+                                                 To="0.95"
+                                                 Duration="0:0:0.15"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </DataTrigger.ExitActions>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+
+                                        <ItemsControl ItemsSource="{Binding Stars}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Style="{StaticResource StarButton}"
+                                                        Command="{Binding DataContext.RateRecipeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding Value}"
                                                         IsEnabled="{Binding DataContext.CanUserRate, RelativeSource={RelativeSource AncestorType=Window}}"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -319,16 +423,39 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Комментарии" FontSize="20" FontWeight="Bold" Foreground="#FF2E7D32" VerticalAlignment="Center"/>
 
-                    <Button Grid.Column="1" Content="−" FontSize="24" FontWeight="Bold" Foreground="Gray"
-                            Background="Transparent" BorderThickness="0" Padding="5"
-                            Command="{Binding CloseCommentsCommand}"
-                            Cursor="Hand" VerticalAlignment="Center">
+                    <Button Grid.Column="1" Content="—"
+                        FontSize="24"
+                        FontWeight="Bold"
+                        Foreground="Gray"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="5"
+                        Command="{Binding CloseCommentsCommand}"
+                        Cursor="Hand"
+                        VerticalAlignment="Center"
+                        Focusable="False">          
                         <Button.Style>
                             <Style TargetType="Button">
                                 <Setter Property="Foreground" Value="Gray"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Padding" Value="5"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="Transparent">
+                                                <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
                                 <Style.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True">
                                         <Setter Property="Foreground" Value="#FF2E7D32"/>
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter Property="Foreground" Value="#FF1B5E20"/>
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>

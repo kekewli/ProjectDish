@@ -1,4 +1,5 @@
-﻿using ProjectDish.MVVM.ViewModels;
+﻿using ProjectDish.Core;
+using ProjectDish.MVVM.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,10 +21,11 @@ namespace ProjectDish.MVVM.Views
     /// </summary>
     public partial class UsersView : Window
     {
-        public UsersView()
+        public UsersView(int currentUserId)
         {
             InitializeComponent();
-            DataContext = new UsersViewModel();
+            DataContext = new UsersViewModel(currentUserId);
+            FadeWindowBehavior.Attach(this);
         }
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {

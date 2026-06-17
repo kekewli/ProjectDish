@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Diagnostics;
 using Newtonsoft.Json;
 using System.Runtime.CompilerServices;
@@ -10,9 +9,7 @@ namespace ProjectDish.Services
         private static readonly string LogFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ProjectDishLogs");
         private static readonly string LogPath = Path.Combine(LogFolder, "application.json.log");
         private static readonly object _lock = new object();
-
         private const string ServiceName = "ProjectDish.WPF";
-
         static Logger()
         {
             try
@@ -27,25 +24,21 @@ namespace ProjectDish.Services
                 Debug.WriteLine($"[LOGGER ERROR] Init failed: {ex.Message}");
             }
         }
-
         public static void Info(string message, object data = null,
             [CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
         {
             WriteLog("INFO", message, data, null, file, line);
         }
-
         public static void Warn(string message, object data = null,
             [CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
         {
             WriteLog("WARN", message, data, null, file, line);
         }
-
         public static void Error(string message, Exception ex = null, object data = null,
             [CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
         {
             WriteLog("ERROR", message, data, ex, file, line);
         }
-
         private static void WriteLog(string level, string message, object data, Exception ex, string filePath, int lineNumber)
         {
             try

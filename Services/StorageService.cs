@@ -2,7 +2,6 @@
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Http;
-
 namespace ProjectDish.Services
 {
     public class StorageService
@@ -11,7 +10,6 @@ namespace ProjectDish.Services
         private readonly string _supabaseUrl;
         private readonly string _apiKey;
         private readonly string _defaultBucket;
-
         public StorageService()
         {
             _supabaseUrl = ConfigurationManager.AppSettings["SupabaseUrl"]?.TrimEnd('/');
@@ -21,23 +19,18 @@ namespace ProjectDish.Services
             if (string.IsNullOrWhiteSpace(_supabaseUrl) || string.IsNullOrWhiteSpace(_apiKey))
                 throw new InvalidOperationException("SupabaseUrl или SupabaseKey не настроены в App.config.");
         }
-
         public string DefaultBucket => _defaultBucket;
-
         public async Task<string> UploadFileAsync(string localFilePath, string bucket, string objectPath)
         {
             bucket ??= _defaultBucket;
             if (!File.Exists(localFilePath)) throw new FileNotFoundException(localFilePath);
             var requestUri = $"{_supabaseUrl}/storage/v1/object/{bucket}/{objectPath}";
-
             using var fs = File.OpenRead(localFilePath);
             using var content = new StreamContent(fs);
             content.Headers.ContentType = new MediaTypeHeaderValue(GetMimeType(localFilePath));
-
             using var request = new HttpRequestMessage(HttpMethod.Put, requestUri) { Content = content };
             request.Headers.Add("Authorization", $"Bearer {_apiKey}");
             request.Headers.Add("apikey", _apiKey);
-
             var resp = await _http.SendAsync(request);
             if (!resp.IsSuccessStatusCode)
             {
@@ -47,7 +40,6 @@ namespace ProjectDish.Services
             var publicUrl = $"{_supabaseUrl}/storage/v1/object/public/{bucket}/{Uri.EscapeDataString(objectPath)}";
             return publicUrl;
         }
-
         public async Task<bool> DeleteFileAsync(string bucket, string objectPath)
         {
             var requestUri = $"{_supabaseUrl}/storage/v1/object/{bucket}/{objectPath}";
@@ -58,7 +50,6 @@ namespace ProjectDish.Services
             var resp = await _http.SendAsync(req);
             return resp.IsSuccessStatusCode;
         }
-
         public string GetObjectPathFromPublicUrl(string publicUrl, string bucket = null)
         {
             if (string.IsNullOrWhiteSpace(publicUrl)) return null;
@@ -68,7 +59,6 @@ namespace ProjectDish.Services
             if (idx < 0) return null;
             return Uri.UnescapeDataString(publicUrl.Substring(idx + marker.Length));
         }
-
         private static string GetMimeType(string file)
         {
             var ext = Path.GetExtension(file).ToLowerInvariant();

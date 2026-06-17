@@ -9,7 +9,6 @@
         WindowStyle="None" Background="Transparent" AllowsTransparency="True">
 
     <Window.Resources>
-        <!-- Стили кнопок-->
         <Style TargetType="Button" x:Key="ActionButton">
             <Setter Property="Background" Value="#FF2E7D32"/>
             <Setter Property="Foreground" Value="White"/>
@@ -77,7 +76,6 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Заголовок и поиск -->
             <Border Grid.Row="0" Background="#FDFDFD" Padding="20" CornerRadius="20,20,0,0" BorderBrush="#EEE" BorderThickness="0,0,0,1">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -88,7 +86,6 @@
 
                     <TextBlock Text="Пользователи" FontSize="18" FontWeight="Bold" Foreground="#FF2E7D32" VerticalAlignment="Center"/>
 
-                    <!-- СТИЛЬ ПОИСКА -->
                     <TextBox Grid.Column="1" Margin="30,0"
                              Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}">
                         <TextBox.Style>
@@ -104,7 +101,6 @@
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock Text="🔍" Margin="10,0,5,0" VerticalAlignment="Center" Foreground="Gray"/>
                                                     <ScrollViewer x:Name="PART_ContentHost" Grid.Column="1" VerticalAlignment="Center"/>
-
                                                     <TextBlock Text="Поиск по имени или email..." Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" IsHitTestVisible="False">
                                                         <TextBlock.Style>
                                                             <Style TargetType="TextBlock">
@@ -130,10 +126,10 @@
                         </TextBox.Style>
                     </TextBox>
 
-                    <Button Grid.Column="2" Content="Закрыть" 
-                    Command="{Binding CloseCommand}"
-                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                    Background="Transparent" BorderThickness="0" Foreground="Gray" Cursor="Hand" FontWeight="SemiBold">
+                    <Button Grid.Column="2" Content="Закрыть"
+                            Command="{Binding CloseCommand}"
+                            CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                            Background="Transparent" BorderThickness="0" Foreground="Gray" Cursor="Hand" FontWeight="SemiBold">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="Transparent">
@@ -145,17 +141,46 @@
                 </Grid>
             </Border>
 
-            <!-- Таблица -->
-            <DataGrid Grid.Row="1" ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}"
-                      AutoGenerateColumns="False" IsReadOnly="True" Margin="15"
-                      CanUserAddRows="False" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#EEE"
-                      BorderThickness="1" BorderBrush="#DDD" RowBackground="White" AlternatingRowBackground="#F9F9F9">
+            <DataGrid Grid.Row="1"
+                      ItemsSource="{Binding Users}"
+                      SelectedItem="{Binding SelectedUser}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      Margin="15"
+                      CanUserAddRows="False"
+                      GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#EEE"
+                      BorderThickness="1"
+                      BorderBrush="#DDD"
+                      RowBackground="White"
+                      AlternatingRowBackground="#F9F9F9">
+
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsBlocked}" Value="1">
+                                <Setter Property="Background" Value="#FFF8D7DA"/>
+                                <Setter Property="Foreground" Value="#FFC62828"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
                     <DataGridTextColumn Header="Имя пользователя" Binding="{Binding Username}" Width="*"/>
                     <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="*"/>
                     <DataGridTextColumn Header="Роль" Binding="{Binding RoleName}" Width="150"/>
+                    <DataGridTextColumn Header="Заблокирован" Binding="{Binding BlockedText}" Width="110" IsReadOnly="True">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
                 </DataGrid.Columns>
+
                 <DataGrid.ColumnHeaderStyle>
                     <Style TargetType="DataGridColumnHeader">
                         <Setter Property="Background" Value="#F5F5F5"/>
@@ -167,12 +192,23 @@
                 </DataGrid.ColumnHeaderStyle>
             </DataGrid>
 
-            <!-- Кнопки -->
             <Border Grid.Row="2" Padding="15" BorderThickness="0,1,0,0" BorderBrush="#EEE">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="✎ Изменить" Command="{Binding UpdateUserCommand}" Style="{StaticResource ActionButton}" Width="115" Height="30"/>
-                    <Button Content="🔀 Права" Command="{Binding ToggleAdminRightsCommand}" Style="{StaticResource ActionButton}" Width="115" Height="30"/>
-                    <Button Content="🗑 Удалить" Command="{Binding DeleteUserCommand}" Style="{StaticResource ActionButton}" Background="#D32F2F" Width="100" Height="30"/>
+                    <Button Content="{Binding ToggleBlockText}"
+                            Command="{Binding ToggleBlockCommand}"
+                            Style="{StaticResource ActionButton}"
+                            Width="155" Height="30"/>
+
+                    <Button Content="🔀 Права"
+                            Command="{Binding ToggleAdminRightsCommand}"
+                            Style="{StaticResource ActionButton}"
+                            Width="115" Height="30"/>
+
+                    <Button Content="🗑 Удалить"
+                            Command="{Binding DeleteUserCommand}"
+                            Style="{StaticResource ActionButton}"
+                            Background="#D32F2F"
+                            Width="100" Height="30"/>
                 </StackPanel>
             </Border>
         </Grid>

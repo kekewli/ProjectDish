@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Linq;
 using System.Windows;
+using System.Text.RegularExpressions; 
 
 namespace ProjectDish.MVVM.ViewModels
 {
@@ -15,6 +16,12 @@ namespace ProjectDish.MVVM.ViewModels
         private string _userName;
         private string _email;
         private bool _isBusy;
+
+        // Список разрешенных доменов
+        private static readonly string[] AllowedEmailDomains =
+        {
+            "mail.ru", "gmail.com", "yandex.ru", "ya.ru", "outlook.com", "hotmail.com"
+        };
 
         public bool IsBusy
         {
@@ -71,14 +78,14 @@ namespace ProjectDish.MVVM.ViewModels
                 else
                 {
                     Logger.Warn("User not found", new { user_id = _userId });
-                    MessageBox.Show("Пользователь не найден.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    AppDialog.Show("Пользователь не найден.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                     CancelCommand.Execute(null);
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("Failed to load user data", ex, new { user_id = _userId });
-                MessageBox.Show($"Ошибка загрузки данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show($"Ошибка загрузки данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 CancelCommand.Execute(null);
             }
             finally
@@ -91,24 +98,49 @@ namespace ProjectDish.MVVM.ViewModels
         {
             if (IsBusy) return;
 
+            // 1. Проверка на пустоту
             if (string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Email))
             {
-                MessageBox.Show("Введите имя и email.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                AppDialog.Show("Заполните имя пользователя и email.", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            if (!Email.Contains("@") || !Email.Contains("."))
+            // 2. Валидация логина
+            if (!IsValidUserName(UserName))
             {
-                MessageBox.Show("Введите корректный email.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                string msg = "Некорректное имя пользователя. Используйте только буквы, цифры и символы - _ .";
+                Logger.Warn("Validation failed: Invalid username format in update", new { username = UserName });
+                AppDialog.Show(msg, "Ошибка валидации", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
+            }
+
+            // 3. Валидация Email
+            if (!IsValidEmail(Email))
+            {
+                Logger.Warn("Validation failed: Invalid email format or domain in update", new { email = Email });
+                AppDialog.Show("Введите корректный Email с поддерживаемым доменом (mail.ru, gmail.com и др).",
+                                "Ошибка валидации", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var passwordBox = parameter as System.Windows.Controls.PasswordBox;
+            string newPassword = passwordBox?.Password;
+
+            // 4. Валидация пароля (ТОЛЬКО если пользователь решил его сменить)
+            if (!string.IsNullOrEmpty(newPassword))
+            {
+                if (!IsValidPassword(newPassword))
+                {
+                    string msg = "Пароль слишком простой. Требуется: 8-64 символа, буквы и цифры.";
+                    Logger.Warn("Validation failed: Weak password in update", new { username = UserName });
+                    AppDialog.Show(msg, "Ошибка валидации", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
             }
 
             IsBusy = true;
             try
             {
-                var passwordBox = parameter as System.Windows.Controls.PasswordBox;
-                string newPassword = passwordBox?.Password;
-
                 string hashedPassword = string.IsNullOrEmpty(newPassword) ? null : HashPassword(newPassword);
 
                 var rpcParams = new
@@ -130,6 +162,11 @@ namespace ProjectDish.MVVM.ViewModels
                     UserRepository.Instance.InvalidateCache();
                     Logger.Info("User cache invalidated after update", new { user_id = _userId });
 
+                    if (App.CurrentUser != null)
+                    {
+                        App.CurrentUser.Username = UserName;
+                        App.CurrentUser.Email = Email;
+                    }
 
                     var window = Application.Current.Windows.OfType<Window>().SingleOrDefault(w => w.DataContext == this);
                     CancelCommand.Execute(window);
@@ -137,20 +174,19 @@ namespace ProjectDish.MVVM.ViewModels
                 else
                 {
                     Logger.Warn("Update user RPC returned false", new { user_id = _userId });
-                    MessageBox.Show("Ошибка обновления.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AppDialog.Show("Ошибка обновления. Возможно, такой логин или почта уже заняты.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("Failed to save user data", ex, new { user_id = _userId });
-                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 IsBusy = false;
             }
         }
-
         private string HashPassword(string password)
         {
             using var sha256 = SHA256.Create();
@@ -158,6 +194,58 @@ namespace ProjectDish.MVVM.ViewModels
             var sb = new StringBuilder();
             foreach (var b in hash) sb.Append(b.ToString("x2"));
             return sb.ToString();
+        }
+
+        private bool IsValidUserName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+            if (name.Length < 3 || name.Length > 32) return false;
+            if (ContainsEmoji(name)) return false;
+            var pattern = @"^[\p{L}\p{Nd}\s\-_.]+$";
+            return Regex.IsMatch(name, pattern);
+        }
+
+        private bool IsValidPassword(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password)) return false;
+            if (password.Length < 8 || password.Length > 64) return false;
+            if (ContainsEmoji(password)) return false;
+
+            var pattern = @"^[\p{L}\p{Nd}\!\@\#\$\%\^\&\*\(\)\-_+\=\[\]\{\}\;\:\,\.\/\?\<\>\|\\""'`~]+$";
+            if (!Regex.IsMatch(password, pattern)) return false;
+
+            bool hasLetter = Regex.IsMatch(password, @"\p{L}");
+            bool hasDigit = Regex.IsMatch(password, @"\p{Nd}");
+            return hasLetter && hasDigit;
+        }
+
+        private bool IsValidEmailDomain(string email)
+        {
+            try
+            {
+                var atIndex = email.LastIndexOf('@');
+                if (atIndex < 0 || atIndex == email.Length - 1) return false;
+
+                var domain = email.Substring(atIndex + 1).ToLowerInvariant();
+                foreach (var allowed in AllowedEmailDomains)
+                {
+                    if (domain == allowed) return true;
+                }
+                return false;
+            }
+            catch { return false; }
+        }
+
+        private bool IsValidEmail(string email)
+        {
+            const string pattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            if (!Regex.IsMatch(email, pattern, RegexOptions.IgnoreCase)) return false;
+            return IsValidEmailDomain(email);
+        }
+
+        private bool ContainsEmoji(string input)
+        {
+            return Regex.IsMatch(input, @"\p{Cs}");
         }
     }
 }

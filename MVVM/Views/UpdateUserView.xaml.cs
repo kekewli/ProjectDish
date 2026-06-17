@@ -1,4 +1,5 @@
-﻿using ProjectDish.MVVM.ViewModels;
+﻿using ProjectDish.Core;
+using ProjectDish.MVVM.ViewModels;
 using System.Windows;
 
 namespace ProjectDish.MVVM.Views
@@ -12,6 +13,7 @@ namespace ProjectDish.MVVM.Views
         {
             InitializeComponent();
             DataContext = new UpdateUserViewModel(userId);
+            FadeWindowBehavior.Attach(this);
         }
     }
 }

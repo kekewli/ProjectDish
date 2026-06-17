@@ -1,4 +1,5 @@
-﻿using ProjectDish.MVVM.ViewModels;
+﻿using ProjectDish.Core;
+using ProjectDish.MVVM.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,7 @@ namespace ProjectDish.MVVM.Views
             InitializeComponent();
             _viewModel = new RecipeViewModel(recipeId, userId, isRequest);
             DataContext = _viewModel;
+            FadeWindowBehavior.Attach(this);
         }
 
         private void Border_Drop(object sender, DragEventArgs e)

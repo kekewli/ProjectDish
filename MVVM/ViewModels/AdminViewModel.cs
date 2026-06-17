@@ -16,6 +16,7 @@ namespace ProjectDish.MVVM.ViewModels
         private string _searchText;
         private int _selectedSortIndex;
         private DispatcherTimer _timer;
+        private readonly int _currentUserId;
 
         // Коллекция рецептов для привязки к интерфейсу
         public ObservableCollection<RecipeModel> Recipes { get; set; } = new ObservableCollection<RecipeModel>();
@@ -68,9 +69,9 @@ namespace ProjectDish.MVVM.ViewModels
         public RelayCommand OpenDetailsCommand { get; }
         public RelayCommand LogoutCommand { get; }
 
-        public AdminViewModel()
+        public AdminViewModel(int currentUserId)
         {
-            // Защита от дизайнера
+            _currentUserId = currentUserId;
             if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
                 return;
 
@@ -121,7 +122,7 @@ namespace ProjectDish.MVVM.ViewModels
             OpenUsersCommand = new RelayCommand(o =>
             {
                 Logger.Info("Opening Users List form");
-                var usersForm = new UsersView();
+                var usersForm = new UsersView(_currentUserId);
                 usersForm.ShowDialog();
             });
 
@@ -139,27 +140,24 @@ namespace ProjectDish.MVVM.ViewModels
             _timer.Tick += async (s, e) => await LoadData();
             _timer.Start();
         }
-
+        // Загрзука данных рецептов
         private async Task LoadData()
         {
             try
             {
                 int? savedId = SelectedRecipe?.Id;
-
                 DataTable dt;
-
                 if (string.IsNullOrWhiteSpace(SearchText))
                 {
-                    dt = await DatabaseHelper.ExecuteQuery("get_all_recipes");
+                    dt = await DatabaseHelper.ExecuteQuery("get_all_recipes"); // Вызов функции получения доступных рецепточ
                 }
                 else
                 {
                     var rpcParams = new { p_key = SearchText };
-                    dt = await DatabaseHelper.ExecuteQuery("search_recipes", rpcParams);
+                    dt = await DatabaseHelper.ExecuteQuery("search_recipes", rpcParams); // Вызов функии поиска
                 }
-
                 var newItems = new System.Collections.Generic.List<RecipeModel>();
-                foreach (DataRow row in dt.Rows)
+                foreach (DataRow row in dt.Rows) // Отображение изображения
                 {
                     string imgUrl = null;
                     if (row.Table.Columns.Contains("image_url") && row["image_url"] != DBNull.Value)
@@ -167,8 +165,7 @@ namespace ProjectDish.MVVM.ViewModels
                         imgUrl = row["image_url"].ToString();
                         if (string.IsNullOrWhiteSpace(imgUrl)) imgUrl = null;
                     }
-
-                    newItems.Add(new RecipeModel
+                    newItems.Add(new RecipeModel // Отображение среднего рейтинга рецепта
                     {
                         Id = Convert.ToInt32(row["recipe_id"]),
                         Name = row["recipe_name"].ToString(),
@@ -177,7 +174,6 @@ namespace ProjectDish.MVVM.ViewModels
                                  ? Convert.ToDecimal(row["average_rating"]) : 0
                     });
                 }
-
                 switch (SelectedSortIndex)
                 {
                     case 1: newItems = newItems.OrderByDescending(x => x.Rating).ToList(); break;
@@ -212,7 +208,7 @@ namespace ProjectDish.MVVM.ViewModels
 
             Logger.Info("Delete recipe requested", new { recipe_id = recipeToDelete.Id });
 
-            var result = MessageBox.Show($"Вы уверены, что хотите удалить {recipeToDelete.Name}?",
+            var result = AppDialog.Show($"Вы уверены, что хотите удалить {recipeToDelete.Name}?",
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
@@ -223,7 +219,7 @@ namespace ProjectDish.MVVM.ViewModels
                 if (ok)
                 {
                     Logger.Info("Recipe deleted successfully", new { recipe_id = recipeToDelete.Id });
-                    MessageBox.Show("Рецепт удален.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    AppDialog.Show("Рецепт удален.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 
                     SelectedRecipe = null;
 
@@ -232,7 +228,7 @@ namespace ProjectDish.MVVM.ViewModels
                 else
                 {
                     Logger.Error("Failed to delete recipe", null, new { recipe_id = recipeToDelete.Id });
-                    MessageBox.Show("Ошибка удаления.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AppDialog.Show("Ошибка удаления.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
 

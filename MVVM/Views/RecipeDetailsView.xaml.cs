@@ -1,4 +1,5 @@
-﻿using ProjectDish.MVVM.ViewModels;
+﻿using ProjectDish.Core;
+using ProjectDish.MVVM.ViewModels;
 using System.ComponentModel;
 using System.Windows;
 
@@ -15,6 +16,7 @@ namespace ProjectDish.MVVM.Views
             InitializeComponent();
             _viewModel = new RecipeDetailsViewModel(recipeId, userId, isAdmin);
             DataContext = _viewModel;
+            FadeWindowBehavior.Attach(this);
         }
         private void Window_Closing(object sender, CancelEventArgs e)
         {

@@ -1,5 +1,4 @@
 ﻿using ProjectDish.Core;
-using ProjectDish.MVVM.Models;
 using ProjectDish.Services;
 using System.Collections.ObjectModel;
 using System.Data;
@@ -14,7 +13,6 @@ namespace ProjectDish.MVVM.ViewModels
         private readonly int _userId;
         private readonly bool _isAdmin;
         private readonly DispatcherTimer _refreshTimer;
-
         private bool _isBusy;
         private string _recipeName;
         private string _category;
@@ -24,28 +22,23 @@ namespace ProjectDish.MVVM.ViewModels
         private decimal _averageRating;
         private int _userRating;
         private bool _isRatingPanelVisible;
-
         private bool _isCommentsPanelVisible;
         private string _newCommentText;
         private readonly RecipeDetailsRepository _detailsRepository;
 
         public ObservableCollection<CommentViewModel> Comments { get; set; } = new ObservableCollection<CommentViewModel>();
-
         public bool IsCommentsPanelVisible
         {
             get => _isCommentsPanelVisible;
             set { _isCommentsPanelVisible = value; OnPropertyChanged(); }
         }
-
         public string NewCommentText
         {
             get => _newCommentText;
             set { _newCommentText = value; OnPropertyChanged(); }
         }
-
         public bool CanUserPostComment => _userId > 0;
         public bool IsAdmin => _isAdmin;
-
         public bool IsBusy { get => _isBusy; set { _isBusy = value; OnPropertyChanged(); } }
         public string RecipeName { get => _recipeName; set { _recipeName = value; OnPropertyChanged(); } }
         public string Category { get => _category; set { _category = value; OnPropertyChanged(); } }
@@ -56,9 +49,7 @@ namespace ProjectDish.MVVM.ViewModels
         public int UserRating { get => _userRating; set { _userRating = value; OnPropertyChanged(); } }
         public bool IsRatingPanelVisible { get => _isRatingPanelVisible; set { _isRatingPanelVisible = value; OnPropertyChanged(); } }
         public bool CanUserRate => !_isAdmin && _userId > 0;
-
         public ObservableCollection<StarViewModel> Stars { get; }
-
         public RelayCommand RateRecipeCommand { get; }
         public RelayCommand ToggleRatingPanelCommand { get; }
         public RelayCommand CloseCommand { get; }
@@ -71,24 +62,19 @@ namespace ProjectDish.MVVM.ViewModels
             _userId = userId;
             _isAdmin = isAdmin;
             _detailsRepository = new RecipeDetailsRepository();
-
             Logger.Info($"Opening recipe details window for RecipeId: {_recipeId}, UserId: {_userId}, IsAdmin: {_isAdmin}");
-
             RateRecipeCommand = new RelayCommand(async (param) => await Star_ClickAsync(param), (param) => CanUserRate);
             ToggleRatingPanelCommand = new RelayCommand(o => IsRatingPanelVisible = !IsRatingPanelVisible);
             CloseCommand = new RelayCommand(o => (o as Window)?.Close());
             ToggleCommentsPanelCommand = new RelayCommand(o => IsCommentsPanelVisible = !IsCommentsPanelVisible);
             CloseCommentsCommand = new RelayCommand(o => IsCommentsPanelVisible = false);
             PostCommentCommand = new RelayCommand(async o => await PostComment(), o => CanUserPostComment && !string.IsNullOrWhiteSpace(NewCommentText));
-
             Stars = new ObservableCollection<StarViewModel>();
             for (int i = 1; i <= 5; i++)
             {
                 Stars.Add(new StarViewModel(i));
             }
-
             _ = InitializeViewModel();
-
             _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
             _refreshTimer.Tick += async (s, e) => await RefreshAllData(true);
             _refreshTimer.Start();
@@ -110,7 +96,7 @@ namespace ProjectDish.MVVM.ViewModels
             var row = await _detailsRepository.GetRecipeDetailsAsync(_recipeId, forceRefresh);
             if (row == null)
             {
-                if (forceRefresh) MessageBox.Show("Не удалось обновить информацию о рецепте.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (forceRefresh) AppDialog.Show("Не удалось обновить информацию о рецепте.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             try
@@ -123,13 +109,11 @@ namespace ProjectDish.MVVM.ViewModels
                 AverageRating = (row.Table.Columns.Contains("average_rating") && row["average_rating"] != DBNull.Value)
                     ? Convert.ToDecimal(row["average_rating"])
                     : 0m;
-
                 if (_userId > 0 && !_isAdmin)
                 {
                     var userRatingResult = await DatabaseHelper.ExecuteRpcScalarAsync("get_user_rating", new { p_user = _userId, p_recipe = _recipeId });
                     UserRating = userRatingResult.HasValue ? Convert.ToInt32(userRatingResult.Value) : 0;
                 }
-
                 RefreshStarsView();
             }
             catch (Exception ex)
@@ -213,7 +197,7 @@ namespace ProjectDish.MVVM.ViewModels
             catch (Exception ex)
             {
                 Logger.Error("Failed to post comment", ex, new { user_id = _userId, recipe_id = _recipeId });
-                MessageBox.Show("Не удалось опубликовать комментарий.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show("Не удалось опубликовать комментарий.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -239,7 +223,7 @@ namespace ProjectDish.MVVM.ViewModels
         }
         private async Task DeleteComment(int commentId)
         {
-            var result = MessageBox.Show("Вы уверены, что хотите удалить этот комментарий?", "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            var result = AppDialog.Show("Вы уверены, что хотите удалить этот комментарий?", "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (result != MessageBoxResult.Yes) return;
 
             IsBusy = true;
@@ -261,7 +245,7 @@ namespace ProjectDish.MVVM.ViewModels
         {
             if (!CanUserRate)
             {
-                MessageBox.Show("Оценивать рецепт могут только авторизованные пользователи.", "Ограничение", MessageBoxButton.OK, MessageBoxImage.Information);
+                AppDialog.Show("Оценивать рецепт могут только авторизованные пользователи.", "Ограничение", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
             int selectedRating;
@@ -295,13 +279,13 @@ namespace ProjectDish.MVVM.ViewModels
                 else
                 {
                     Logger.Warn("Failed to get new average rating.", new { recipe_id = _recipeId });
-                    MessageBox.Show("Не удалось получить обновлённый рейтинг.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    AppDialog.Show("Не удалось получить обновлённый рейтинг.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("Error while submitting rating", ex, new { user_id = _userId, recipe_id = _recipeId });
-                MessageBox.Show($"Ошибка при отправке рейтинга: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppDialog.Show($"Ошибка при отправке рейтинга: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         private void RefreshStarsView()

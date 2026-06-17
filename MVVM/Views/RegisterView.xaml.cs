@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ProjectDish.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,6 +20,8 @@ namespace ProjectDish.MVVM.Views
         public RegisterView()
         {
             InitializeComponent();
+            FadeWindowBehavior.Attach(this);
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
